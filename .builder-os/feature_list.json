@@ -13,9 +13,9 @@
       "title": "Gnani TTS adapter (Timbre v3.0 REST, Shivani, hi-en, wav 16kHz)"
     },
     {
-      "evidence": "",
+      "evidence": "tests/test_gnani_config.py (9 tests) passed; tests/test_gnani_config.py and tests/test_adapters.py: 17 passed; full suite: 75 passed (43 inherited + 11 gp-001 + 12 gp-002 + 9 gp-003) in pytest; ruff clean",
       "id": "gp-003",
-      "status": "pending",
+      "status": "passing",
       "title": "Config + provider wiring (STT_PROVIDER/TTS_PROVIDER=gnani, factory registration, missing-key error)"
     },
     {
@@ -45,5 +45,5 @@
   ],
   "passing_requires_evidence": true,
   "project": "gnani-voicepilot",
-  "single_active_feature": "gp-003"
+  "single_active_feature": "gp-004"
 }

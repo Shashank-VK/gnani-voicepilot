@@ -9,6 +9,7 @@ from voicepilot.adapters.stt.base import (
     STTError,
     TranscriptionResult,
 )
+from voicepilot.adapters.stt.gnani import GnaniSTTAdapter
 from voicepilot.adapters.stt.groq import GroqSTTAdapter
 from voicepilot.adapters.stt.local import LocalWhisperSTTAdapter
 from voicepilot.adapters.stt.mock import MockSTTAdapter
@@ -40,10 +41,25 @@ def get_stt_adapter(settings: Settings) -> SpeechToTextAdapter:
             fallback_adapter=local_adapter if not settings.OFFLINE_MODE else mock_adapter,
         )
 
+    if settings.STT_PROVIDER == "gnani":
+        if not settings.GNANI_API_KEY:
+            raise ProviderAuthError(
+                "GNANI_API_KEY is not configured",
+                provider="gnani",
+                status_code=401,
+            )
+        return GnaniSTTAdapter(
+            api_key=settings.GNANI_API_KEY,
+            timeout_seconds=settings.PROVIDER_TIMEOUT_SECONDS,
+            max_retries=settings.STT_MAX_RETRIES,
+            language_code=settings.GNANI_STT_LANGUAGE,
+        )
+
     return mock_adapter
 
 
 __all__ = [
+    "GnaniSTTAdapter",
     "GroqSTTAdapter",
     "LocalWhisperSTTAdapter",
     "MockSTTAdapter",

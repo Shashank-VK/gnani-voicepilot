@@ -25,14 +25,22 @@ class Settings(BaseSettings):
     DEMO_MODE: bool = True
     DEMO_API_KEY: str = "voicepilot-demo-key"
 
-    # Provider Options: "groq" (cloud fast-path), "local" (faster-whisper), "mock" (CI/offline)
-    STT_PROVIDER: Literal["groq", "local", "mock"] = "mock"
-    TTS_PROVIDER: Literal["edge", "mock"] = "mock"
+    # Provider Options: "groq" (cloud fast-path), "local" (faster-whisper), "mock" (CI/offline), "gnani"
+    STT_PROVIDER: Literal["groq", "local", "mock", "gnani"] = "mock"
+    TTS_PROVIDER: Literal["edge", "mock", "gnani"] = "mock"
     LLM_PROVIDER: Literal["groq", "openai", "mock"] = "mock"
 
     # Cloud API Keys (optional if using mock or local)
     GROQ_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+
+    # Gnani Configuration (Prisma v2.5 STT, Timbre v3.0 TTS)
+    GNANI_API_KEY: str = ""
+    GNANI_STT_MODEL: str = "prisma-v2.5"
+    GNANI_STT_LANGUAGE: str = "hi-IN"
+    GNANI_TTS_MODEL: str = "timbre-v3.0"
+    GNANI_TTS_VOICE: str = "Shivani"
+    GNANI_TTS_LANGUAGE: str = "hi-en"
 
     # Audio Validation Thresholds
     MAX_AUDIO_SECONDS: float = 30.0
