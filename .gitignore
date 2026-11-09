@@ -49,3 +49,7 @@ htmlcov/
 # internal planning docs (not for the public repo)
 PRD.txt
 REVIEW-ADDENDUM.txt
+
+# Local-only planning files (never public)
+specs.md
+.builder-os/
