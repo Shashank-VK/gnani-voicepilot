@@ -16,7 +16,7 @@ def test_demo_reset_success(client: TestClient):
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
-    assert data["demo_session_id"] == "demo-session-greengrid"
+    assert data["demo_session_id"] == "demo-session-kirana"
     assert data["reseeded_turns"] == 3
 
     # 3. Old session should be gone
@@ -24,11 +24,11 @@ def test_demo_reset_success(client: TestClient):
     assert res_old.status_code == 404
 
     # 4. Demo session should be available with 3 turns
-    res_demo = client.get("/v1/sessions/demo-session-greengrid")
+    res_demo = client.get("/v1/sessions/demo-session-kirana")
     assert res_demo.status_code == 200
     demo_data = res_demo.json()
     assert len(demo_data["turns"]) == 3
-    assert demo_data["preferences"].get("preferred_unit") == "kWh"
+    assert demo_data["preferences"].get("preferred_language") == "Hinglish"
 
 
 def test_demo_reset_idempotent(client: TestClient):

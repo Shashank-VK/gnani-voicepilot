@@ -75,3 +75,29 @@
   - `tests/test_kirana.py tests/test_agent.py`: 22 passed.
   - Full suite: 90/90 passed (75 prior + 15 new, 0 regressions).
   - `ruff check src tests`: clean.
+
+## 2026-11-09 — Feature gp-005: Kirana UI rebrand + Hinglish examples + demo fixtures (Builder / agy)
+- UI rebrand (`src/voicepilot/static/index.html`, `app.js`, `styles.css`):
+  - Page title and header rebranded: "Kirana Voice Agent — powered by Gnani Prisma + Timbre". Subtitle: "Bol kar order karo — Hinglish mein baat karo, kirana ka saaman mangwao."
+  - Visible "How it works" pipeline strip added: Mic → Gnani Prisma v2.5 (STT, hi-IN) → Kirana agent → Gnani Timbre v3.0 (TTS, voice Shivani, hi-en).
+  - Three clickable example prompt chips added: (1) "Bhaiya, 2 kilo atta kitne ka hai?", (2) "2 kilo atta aur 1 litre tel le lo, total kitna hua?", (3) "Doodh hai kya stock mein?".
+  - Waterfall labels aligned to Gnani models (`STT (Gnani Prisma v2.5)`, `Kirana Agent`, `TTS (Gnani Timbre v3.0)`) with original DOM IDs and telemetry waterfall kept fully operational.
+  - Footer notice added: "Demo uses synthetic kirana data only — no real customers or phone numbers." and "Gnani models: Prisma v2.5 STT · Timbre v3.0 TTS".
+  - Cleaned all remaining legacy scenario text from static assets and client alert messages.
+- Green Grid cleanup (0 hits requirement):
+  - Replaced legacy text in `src/voicepilot/agent/memory.py` `seed_demo_fixtures` with the 3 canonical Kirana turns, Hinglish responses, and `demo-session-kirana`.
+  - Replaced `default_text` and canned responses in `src/voicepilot/adapters/stt/mock.py` with Kirana prompts.
+  - Replaced mocked STT transcript in `tests/test_adapters.py` with "Bhaiya, 2 kilo atta kitne ka hai?".
+  - Updated `tests/test_demo_reset.py` to assert on `demo-session-kirana` and `preferred_language: Hinglish`.
+  - Verified `grep -rnE "Green Grid|GreenGrid" src tests --include='*.py' --include='*.html' --include='*.js'` produces zero hits.
+- Demo fixtures (`demo/`):
+  - `demo/demo-prompts.md`: 5-turn dialogue sequence mapped to the 2–3 minute video cut (Turn 1 Atta price, Turn 2 Atta+Tel order & total, Turn 3 Doodh stock, Turn 4 Chai+Biscuit second order, Turn 5 Closing statement citing Gnani Prisma v2.5 & Timbre v3.0).
+  - `demo/generate_fixtures.py`: Standalone synthesis script using `GnaniTTSAdapter` with `timbre-v3.0` Shivani voice. Strictly checks for `GNANI_API_KEY` (exits non-zero if missing, no mock audio fallback). Not executed during this feature (reserved for gp-006).
+  - `demo/README.md`: Explains fixtures, video timeline, independent narration track voice swap for Tuesday morning, and gp-006 synthesis execution.
+- Tests added (`tests/test_ui_rebrand.py`):
+  - 7 tests covering GET / response status & HTML rebrand markers ("Kirana Voice Agent", "Prisma", "Timbre", "Shivani"), presence of the three example prompt strings, presence of the synthetic data footer notice, `demo/demo-prompts.md` structure & all 5 turns, `demo/generate_fixtures.py` compilation & refusal to run without `GNANI_API_KEY`, `demo/README.md` presence & voice swap notes, and zero legacy string hits in `src` & `tests`.
+- Pytest counts:
+  - `tests/test_ui_rebrand.py`: 7 passed.
+  - `tests/test_ui_rebrand.py tests/test_api.py`: 18 passed.
+  - Full suite: 97 passed (90 prior + 7 new, 0 regressions).
+  - `ruff check src tests demo`: clean.

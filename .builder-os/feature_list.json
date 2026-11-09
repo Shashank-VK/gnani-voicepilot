@@ -25,9 +25,9 @@
       "title": "Kirana agent (Hinglish prompt + synthetic catalog tool + order total + confirmation)"
     },
     {
-      "evidence": "",
+      "evidence": "tests/test_ui_rebrand.py (7 tests) passed; tests/test_ui_rebrand.py and tests/test_api.py: 18 passed; full suite: 97 passed (90 prior + 7 new) in pytest; ruff clean; zero Green Grid references",
       "id": "gp-005",
-      "status": "pending",
+      "status": "passing",
       "title": "Gradio rebrand + Hinglish examples + demo fixtures"
     },
     {
@@ -45,5 +45,5 @@
   ],
   "passing_requires_evidence": true,
   "project": "gnani-voicepilot",
-  "single_active_feature": "gp-005"
+  "single_active_feature": "gp-006"
 }

@@ -104,54 +104,51 @@ class SessionStore:
             self._sessions.clear()
 
     def seed_demo_fixtures(self) -> str:
-        """Seed a clean demo session with the canonical Green Grid scenario turns."""
+        """Seed a clean demo session with the canonical Kirana scenario turns."""
         with self._lock:
-            demo_sid = "demo-session-greengrid"
+            demo_sid = "demo-session-kirana"
             sess = SessionData(
                 session_id=demo_sid,
-                preferences={"preferred_unit": "kWh"},
+                preferences={"preferred_language": "Hinglish"},
             )
-            # Turn 1: Summary
+            # Turn 1: Price lookup
             sess.turns.append(
                 TurnRecord(
                     turn_id="turn_demo_01",
-                    user_transcript="Summarize the Green Grid AI project",
+                    user_transcript="Bhaiya, 2 kilo atta kitne ka hai?",
                     assistant_response=(
-                        "Green Grid AI is an intelligent microgrid optimization initiative in Bengaluru "
-                        "combining 2.4 MW of commercial solar PV with a 4.8 MWh lithium iron phosphate "
-                        "battery energy storage system (BESS). It provides automated peak-shaving and energy arbitrage."
+                        "Atta — ₹55 per kilo (2 kilo ka ₹110), stock mein hai (25 kilo available hai). "
+                        "Aur kuch chahiye?"
                     ),
-                    tool_used="knowledge_lookup",
-                    tool_output="2.4 MW solar PV, 4.8 MWh LiFePO4 BESS, 99.4% uptime.",
+                    tool_used="catalog_lookup",
+                    tool_output="Atta — ₹55 per kilo (2 kilo ka ₹110), stock mein hai (25 kilo available hai).",
                     latencies={"stt": 82.0, "agent": 120.0, "tts": 35.0, "total": 237.0},
                 )
             )
-            # Turn 2: Calculation
+            # Turn 2: Order & total confirmation
             sess.turns.append(
                 TurnRecord(
                     turn_id="turn_demo_02",
-                    user_transcript="Calculate a simple savings estimate",
+                    user_transcript="2 kilo atta aur 1 litre tel le lo, total kitna hua?",
                     assistant_response=(
-                        "By shifting 3,200 kWh per day from the peak tariff of $0.22/kWh to off-peak at $0.09/kWh, "
-                        "Green Grid AI saves $416.00 daily. Over 365 days, this yields $151,840 in energy arbitrage, "
-                        "plus ~$38,000 from demand charge reduction, totaling approximately $189,840 per year."
+                        "Aapka order: 2 kilo atta ₹110 + 1 litre tel ₹145 = kul ₹255. Confirm karun?"
                     ),
-                    tool_used="calculator",
-                    tool_output="3200 * (0.22 - 0.09) * 365 = 151840.0",
+                    tool_used="catalog_order",
+                    tool_output="2 kilo atta @ ₹55 = ₹110; 1 litre tel @ ₹145 = ₹145|255",
                     latencies={"stt": 75.0, "agent": 110.0, "tts": 40.0, "total": 225.0},
                 )
             )
-            # Turn 3: Preference
+            # Turn 3: Stock lookup
             sess.turns.append(
                 TurnRecord(
                     turn_id="turn_demo_03",
-                    user_transcript="Remember my preferred unit for the follow-up as kWh",
+                    user_transcript="Doodh hai kya stock mein?",
                     assistant_response=(
-                        "I have noted your preferred unit as kilowatt-hours (kWh). All upcoming calculations "
-                        "and energy savings reports will be presented in kWh."
+                        "Doodh — ₹56 per litre, stock mein hai (10 litre available hai). "
+                        "Aur kuch chahiye?"
                     ),
-                    tool_used=None,
-                    tool_output=None,
+                    tool_used="catalog_lookup",
+                    tool_output="Doodh — ₹56 per litre, stock mein hai (10 litre available hai).",
                     latencies={"stt": 60.0, "agent": 80.0, "tts": 30.0, "total": 170.0},
                 )
             )

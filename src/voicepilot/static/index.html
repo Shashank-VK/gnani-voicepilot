@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VoicePilot · Voice-First AI Agent</title>
+  <title>Kirana Voice Agent — powered by Gnani Prisma + Timbre</title>
   <link rel="stylesheet" href="/static/styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
 </head>
 <body>
   <div class="app-layout">
     <!-- Header -->
     <header class="app-header">
       <div class="brand">
-        <span class="brand-icon">⚡</span>
+        <span class="brand-icon">🛒</span>
         <div>
-          <h1>VoicePilot</h1>
-          <p class="subtitle">Low-Latency Spoken Agent Orchestration</p>
+          <h1>Kirana Voice Agent — powered by Gnani Prisma + Timbre</h1>
+          <p class="subtitle">Bol kar order karo — Hinglish mein baat karo, kirana ka saaman mangwao.</p>
         </div>
       </div>
       <div class="header-actions">
@@ -30,6 +30,20 @@
         </button>
       </div>
     </header>
+
+    <!-- How it works pipeline strip -->
+    <section class="how-it-works-strip">
+      <span class="how-label">How it works:</span>
+      <div class="pipeline-flow">
+        <span class="step-chip">🎙️ Mic</span>
+        <span class="flow-arrow">→</span>
+        <span class="step-chip">⚡ Gnani Prisma v2.5 (STT, hi-IN)</span>
+        <span class="flow-arrow">→</span>
+        <span class="step-chip">🤖 Kirana agent</span>
+        <span class="flow-arrow">→</span>
+        <span class="step-chip">🔊 Gnani Timbre v3.0 (TTS, voice Shivani, hi-en)</span>
+      </div>
+    </section>
 
     <!-- Main Content Grid -->
     <main class="main-grid">
@@ -47,7 +61,7 @@
         <!-- Chat History -->
         <div class="chat-container" id="chatContainer">
           <div class="system-bubble">
-            <strong>VoicePilot Orchestrator Ready.</strong> Press & hold or click the microphone to speak, or use the scripted demo scenario buttons below.
+            <strong>Kirana Voice Agent Ready.</strong> Press &amp; hold or click the microphone to speak in Hinglish, or click an example prompt below.
           </div>
         </div>
 
@@ -87,15 +101,15 @@
 
         <!-- Scripted Demo Scenario Helper -->
         <div class="demo-helpers">
-          <span class="helper-label">Demo Scenario:</span>
-          <button class="chip-btn" data-prompt="Summarize the Green Grid AI project">
-            1️⃣ Summarize Green Grid
+          <span class="helper-label">Example Prompts:</span>
+          <button class="chip-btn" data-prompt="Bhaiya, 2 kilo atta kitne ka hai?">
+            1️⃣ Bhaiya, 2 kilo atta kitne ka hai?
           </button>
-          <button class="chip-btn" data-prompt="Calculate a simple savings estimate">
-            2️⃣ Calculate Savings
+          <button class="chip-btn" data-prompt="2 kilo atta aur 1 litre tel le lo, total kitna hua?">
+            2️⃣ 2 kilo atta aur 1 litre tel le lo, total kitna hua?
           </button>
-          <button class="chip-btn" data-prompt="Remember my preferred unit for the follow-up as kWh">
-            3️⃣ Set Unit: kWh
+          <button class="chip-btn" data-prompt="Doodh hai kya stock mein?">
+            3️⃣ Doodh hai kya stock mein?
           </button>
         </div>
       </section>
@@ -115,17 +129,17 @@
               <span class="stage-val" id="valUpload">0 ms</span>
             </div>
             <div class="timing-row">
-              <span class="stage-label">STT (Whisper)</span>
+              <span class="stage-label">STT (Gnani Prisma v2.5)</span>
               <div class="bar-container"><div class="bar bar-stt" id="barStt"></div></div>
               <span class="stage-val" id="valStt">0 ms</span>
             </div>
             <div class="timing-row">
-              <span class="stage-label">LangGraph Agent</span>
+              <span class="stage-label">Kirana Agent</span>
               <div class="bar-container"><div class="bar bar-agent" id="barAgent"></div></div>
               <span class="stage-val" id="valAgent">0 ms</span>
             </div>
             <div class="timing-row">
-              <span class="stage-label">TTS Synthesis</span>
+              <span class="stage-label">TTS (Gnani Timbre v3.0)</span>
               <div class="bar-container"><div class="bar bar-tts" id="barTts"></div></div>
               <span class="stage-val" id="valTts">0 ms</span>
             </div>
@@ -183,6 +197,12 @@
       </section>
     </main>
 
+    <!-- Footer Note -->
+    <footer class="app-footer">
+      <p class="footer-note">Demo uses synthetic kirana data only — no real customers or phone numbers.</p>
+      <p class="footer-models">Gnani models: Prisma v2.5 STT · Timbre v3.0 TTS</p>
+    </footer>
+
     <!-- Microphone Permission Recovery Modal -->
     <div class="modal hidden" id="permissionModal">
       <div class="modal-backdrop" id="modalBackdrop"></div>
@@ -202,7 +222,7 @@
           <p>If another active call (Google Meet, Zoom, Webex) is holding exclusive access to your microphone, mute or leave that tab so the browser can acquire the audio stream.</p>
 
           <h4>4. Offline / No Mic Setup</h4>
-          <p>You can click any of the <strong>Demo Scenario</strong> buttons to execute clean synthesized audio turns without needing a physical microphone.</p>
+          <p>You can click any of the <strong>Example Prompts</strong> to execute clean synthesized audio turns without needing a physical microphone.</p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-primary" id="gotItBtn">Got It</button>

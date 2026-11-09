@@ -170,7 +170,7 @@ class VoicePilotClient {
       await this.fetchTelemetryStats();
     } catch (err) {
       console.warn("Failed creating initial session, using default demo session:", err);
-      this.sessionId = "demo-session-greengrid";
+      this.sessionId = "demo-session-kirana";
       this.dom.sessionIdDisplay.textContent = this.sessionId;
       this.loadSessionHistory();
     }
@@ -720,7 +720,7 @@ class VoicePilotClient {
   }
 
   async resetDemo() {
-    if (!confirm("Reset demo state? This will clear active sessions and reseed the Green Grid demo scenario.")) {
+    if (!confirm("Reset demo state? This will clear active sessions and reseed the kirana demo scenario.")) {
       return;
     }
 

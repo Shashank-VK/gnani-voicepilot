@@ -51,13 +51,13 @@ async def test_groq_stt_mocked_success(speech_wav):
 
     mock_resp = httpx.Response(
         200,
-        json={"text": "Summarize the Green Grid AI project", "language": "en"},
+        json={"text": "Bhaiya, 2 kilo atta kitne ka hai?", "language": "en"},
         request=httpx.Request("POST", "https://api.groq.com/openai/v1/audio/transcriptions"),
     )
 
     with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)):
         result = await groq_adapter.transcribe(speech_wav)
-        assert result.text == "Summarize the Green Grid AI project"
+        assert result.text == "Bhaiya, 2 kilo atta kitne ka hai?"
         assert result.provider == "groq"
 
 

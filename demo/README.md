@@ -1,0 +1,3 @@
+# Demo Audio Fixtures
+
+This directory contains dialogue specifications and fixture generation tooling for the 2–3 minute submission demo video of the Kirana Voice Agent. The expected agent replies correspond to the canonical 5-turn sequence detailed in `demo-prompts.md`, demonstrating Hinglish speech understanding, catalog lookup, and live arithmetic calculations. For video production, narration voiceover is maintained as an independent external audio track (swappable Tuesday morning without touching application code), while the in-app conversational agent voice remains Gnani Timbre v3.0 `Shivani` (`hi-en`). Live synthesis of `demo/*.wav` audio files via `generate_fixtures.py` is executed during feature `gp-006`.

@@ -11,15 +11,15 @@ class MockSTTAdapter(SpeechToTextAdapter):
 
     def __init__(
         self,
-        default_text: str = "Summarize the Green Grid AI project",
+        default_text: str = "Bhaiya, 2 kilo atta kitne ka hai?",
         simulated_latency_ms: float = 80.0,
     ):
         self.default_text = default_text
         self.simulated_latency_ms = simulated_latency_ms
         self.canned_responses: list[str] = [
-            "Summarize the Green Grid AI project",
-            "Calculate a simple savings estimate",
-            "Remember my preferred unit for the follow-up as kWh",
+            "Bhaiya, 2 kilo atta kitne ka hai?",
+            "2 kilo atta aur 1 litre tel le lo, total kitna hua?",
+            "Doodh hai kya stock mein?",
         ]
         self._call_count = 0
 
