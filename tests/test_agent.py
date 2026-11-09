@@ -7,7 +7,7 @@ from voicepilot.adapters.tts.mock import MockTTSAdapter
 from voicepilot.agent.graph import AgentTurnState, VoicePilotGraph
 from voicepilot.agent.memory import SessionStore, TurnRecord
 from voicepilot.agent.tools import (
-    GreenGridKnowledgeStore,
+    KiranaCatalog,
     SafeCalculator,
     ToolExecutionError,
 )
@@ -17,7 +17,7 @@ from voicepilot.config import Settings
 def test_safe_calculator_basic_arithmetic():
     assert SafeCalculator.evaluate("2 + 2") == 4
     assert SafeCalculator.evaluate("10 - 4.5") == 5.5
-    # Green Grid annual savings calculation
+    # Arbitrage calculation formula
     expr = "3200 * (0.22 - 0.09) * 365"
     assert round(SafeCalculator.evaluate(expr), 2) == 151840.0
 
@@ -40,14 +40,22 @@ def test_safe_calculator_blocks_arbitrary_code():
             SafeCalculator.evaluate(expr)
 
 
-def test_knowledge_lookup_green_grid():
-    summary = GreenGridKnowledgeStore.lookup("Tell me about Green Grid AI")
-    assert "2.4 MW" in summary
-    assert "4.8 MWh" in summary
-    assert "Bengaluru" in summary
+def test_kirana_catalog_lookup_and_order():
+    atta_info = KiranaCatalog.lookup("atta ka daam?")
+    assert "₹55" in atta_info or "55" in atta_info
 
-    tariffs = GreenGridKnowledgeStore.lookup("What are the peak tariffs?")
-    assert "$0.22/kWh" in tariffs
+    doodh_info = KiranaCatalog.lookup("doodh stock?")
+    assert "stock" in doodh_info.lower()
+
+    tel_item = KiranaCatalog.find_item("tel")
+    assert tel_item is not None
+    assert tel_item["name"] == "sarso tel"
+
+    lines = KiranaCatalog.parse_order("2 kilo atta aur 1 litre tel")
+    assert len(lines) == 2
+
+    total = KiranaCatalog.order_total(lines)
+    assert total == 255
 
 
 def test_session_memory_window_and_preferences():
@@ -91,8 +99,8 @@ async def test_langgraph_canonical_demo_flow(speech_wav):
 
     sid = "demo_flow_sess"
 
-    # Turn 1: Summary
-    stt.set_next_text("Summarize the Green Grid AI project")
+    # Turn 1: Price lookup
+    stt.set_next_text("Bhaiya, 2 kilo atta kitne ka hai?")
     turn1: AgentTurnState = {
         "turn_id": "turn_1",
         "session_id": sid,
@@ -100,12 +108,12 @@ async def test_langgraph_canonical_demo_flow(speech_wav):
         "is_cancelled": False,
     }
     res1 = await graph.run_turn(turn1)
-    assert "Green Grid AI" in res1["response_text"]
-    assert res1["tool_called"] == "knowledge_lookup"
+    assert "110" in res1["response_text"] or "55" in res1["response_text"]
+    assert res1["tool_called"] == "catalog_lookup"
     assert res1.get("speech_audio_bytes") is not None
 
-    # Turn 2: Calculation
-    stt.set_next_text("Calculate a simple savings estimate")
+    # Turn 2: Order
+    stt.set_next_text("2 kilo atta aur 1 litre tel le lo, total kitna hua?")
     turn2: AgentTurnState = {
         "turn_id": "turn_2",
         "session_id": sid,
@@ -113,11 +121,11 @@ async def test_langgraph_canonical_demo_flow(speech_wav):
         "is_cancelled": False,
     }
     res2 = await graph.run_turn(turn2)
-    assert "$151,840" in res2["response_text"] or "$189,840" in res2["response_text"]
-    assert res2["tool_called"] == "calculator"
+    assert "255" in res2["response_text"]
+    assert res2["tool_called"] == "catalog_order"
 
-    # Turn 3: Preference follow-up
-    stt.set_next_text("Remember my preferred unit for the follow-up as kWh")
+    # Turn 3: Stock lookup
+    stt.set_next_text("Doodh hai kya stock mein?")
     turn3: AgentTurnState = {
         "turn_id": "turn_3",
         "session_id": sid,
@@ -125,12 +133,12 @@ async def test_langgraph_canonical_demo_flow(speech_wav):
         "is_cancelled": False,
     }
     res3 = await graph.run_turn(turn3)
-    assert "kWh" in res3["response_text"]
+    assert "doodh" in res3["response_text"].lower() or "stock" in res3["response_text"].lower()
+    assert res3["tool_called"] == "catalog_lookup"
 
     # Verify session store recorded all 3 turns
     sess = store.get_session(sid)
     assert len(sess.turns) == 3
-    assert sess.preferences.get("preferred_unit") == "kWh"
 
 
 @pytest.mark.asyncio

@@ -9,10 +9,19 @@ from langgraph.graph import END, START, StateGraph
 from voicepilot.adapters.stt.base import SpeechToTextAdapter, STTError
 from voicepilot.adapters.tts.base import TextToSpeechAdapter, TTSError
 from voicepilot.agent.memory import SessionStore, TurnRecord, get_session_store
-from voicepilot.agent.tools import GreenGridKnowledgeStore, SafeCalculator, ToolExecutionError
+from voicepilot.agent.tools import KiranaCatalog, SafeCalculator, ToolExecutionError
 from voicepilot.audio.transcoder import AudioFormatError, transcode_to_pcm16_wav
 from voicepilot.audio.validator import AudioValidationError, validate_audio_samples
 from voicepilot.config import Settings, get_settings
+
+KIRANA_PERSONA = (
+    "Friendly neighbourhood kirana-store voice assistant. "
+    "Replies ALWAYS in Roman-script Hinglish (code-mixed Hindi-English). "
+    "Keep replies short and conversational for voice. "
+    "All prices are in Indian Rupees (₹). "
+    "Never invent items, prices, or availability outside the synthetic kirana catalog. "
+    "Synthetic data only — no real personal or customer data."
+)
 
 
 class AgentTurnState(TypedDict, total=False):
@@ -201,7 +210,11 @@ class VoicePilotGraph:
 
         pcm_bytes = state.get("pcm_wav_bytes")
         if not pcm_bytes:
-            return {"error": "Missing PCM audio for transcription", "error_code": "no_speech", "error_stage": "transcribe"}
+            return {
+                "error": "Missing PCM audio for transcription",
+                "error_code": "no_speech",
+                "error_stage": "transcribe",
+            }
 
         t0 = time.perf_counter()
         try:
@@ -255,18 +268,44 @@ class VoicePilotGraph:
             self.session_store.set_preference(state.get("session_id", "default"), "preferred_unit", unit)
             return {"intent": "preference_update", "tool_called": None}
 
-        # Check for calculation:
+        # Check for Kirana intents:
+        has_catalog_item = KiranaCatalog.find_in_text(transcript) is not None
+        parsed_order = KiranaCatalog.parse_order(transcript)
+        has_order_pattern = len(parsed_order) > 0
+
+        lookup_keywords = ["kitne", "price", "rate", "kya hai", "stock", "hai kya", "available", "daam", "bhav"]
+        has_lookup_kw = any(kw in q for kw in lookup_keywords)
+
+        order_keywords = ["le lo", "order", "chahiye", "pack kar", "de do", "bhej do"]
+        has_order_kw = any(kw in q for kw in order_keywords)
+
+        # 1. Order intent:
+        # User explicitly orders with an item, or gave quantity+item pattern and is not just asking for price/stock
+        if (has_order_kw and (has_catalog_item or has_order_pattern)) or (has_order_pattern and not has_lookup_kw):
+            return {
+                "intent": "kirana_order",
+                "tool_called": "catalog_order",
+                "tool_input": transcript,
+            }
+
+        # 2. Price/stock lookup:
+        if has_catalog_item and has_lookup_kw:
+            return {
+                "intent": "kirana_lookup",
+                "tool_called": "catalog_lookup",
+                "tool_input": transcript,
+            }
+
+        # 3. Check for generic calculation:
         is_calc = False
         math_expr = None
-        if any(w in q for w in ["calculate", "savings estimate", "estimate savings", "compute", "how much savings"]):
+        if any(w in q for w in ["calculate", "compute"]):
             is_calc = True
-            # Check if there is explicit math or standard Green Grid savings formula:
             explicit_math = re.search(r"(\d+[\s\d\+\-\*\/\.\(\)]+\d+)", transcript)
             if explicit_math:
                 math_expr = explicit_math.group(1).strip()
             else:
-                # Canonical savings formula: 3200 kWh/day * ($0.22 - $0.09) * 365
-                math_expr = "3200 * (0.22 - 0.09) * 365"
+                math_expr = "0"
 
         elif re.search(r"(\d+\s*[\+\-\*\/]\s*\d+)", transcript):
             is_calc = True
@@ -278,15 +317,7 @@ class VoicePilotGraph:
             return {
                 "intent": "calculation",
                 "tool_called": "calculator",
-                "tool_input": math_expr or "3200 * (0.22 - 0.09) * 365",
-            }
-
-        # Check for knowledge lookup:
-        if any(w in q for w in ["green grid", "solar", "battery", "bess", "tariff", "summarize", "summary", "project", "what is"]):
-            return {
-                "intent": "knowledge_lookup",
-                "tool_called": "knowledge_lookup",
-                "tool_input": transcript,
+                "tool_input": math_expr or "0",
             }
 
         return {"intent": "general", "tool_called": None}
@@ -302,9 +333,33 @@ class VoicePilotGraph:
             if tool_name == "calculator":
                 result = SafeCalculator.evaluate(tool_input)
                 return {"tool_result": str(result)}
-            elif tool_name == "knowledge_lookup":
-                result = GreenGridKnowledgeStore.lookup(tool_input)
+            elif tool_name == "catalog_lookup":
+                result = KiranaCatalog.lookup(tool_input)
                 return {"tool_result": result}
+            elif tool_name == "catalog_order":
+                lines = KiranaCatalog.parse_order(tool_input)
+                if not lines:
+                    item = KiranaCatalog.find_in_text(tool_input)
+                    if item:
+                        lines = [(1, item["unit"], item)]
+                if not lines:
+                    return {"tool_result": "Koi item pehchan nahi paya|0"}
+
+                line_strs = []
+                for qty, unit, item in lines:
+                    item_name = item.get("matched") or item.get("name", "item")
+                    price = item.get("price", 0)
+                    line_val = SafeCalculator.evaluate(f"{qty} * {price}")
+                    line_val_str = str(
+                        int(line_val)
+                        if isinstance(line_val, (int, float)) and line_val == int(line_val)
+                        else line_val
+                    )
+                    line_strs.append(f"{qty} {unit} {item_name} @ ₹{price} = ₹{line_val_str}")
+
+                total = KiranaCatalog.order_total(lines)
+                total_str = str(int(total) if total == int(total) else total)
+                return {"tool_result": f"{'; '.join(line_strs)}|{total_str}"}
         except ToolExecutionError as exc:
             return {"tool_result": f"Tool error: {exc}"}
         except Exception as exc:
@@ -334,37 +389,44 @@ class VoicePilotGraph:
                 f"expressed using your preferred unit: {preferred_unit}."
             )
 
+        elif intent == "kirana_lookup":
+            if tool_result and not tool_result.startswith("Tool error"):
+                response = f"{tool_result} Aur kuch chahiye?"
+            else:
+                response = "Maaf kijiye, item ki jankari nahi mil payi. Aur kuch chahiye?"
+
+        elif intent == "kirana_order":
+            if tool_result and "|" in tool_result and not tool_result.startswith("Tool error"):
+                lines_part, total_part = tool_result.split("|", 1)
+                formatted_items = []
+                for line in lines_part.split("; "):
+                    if " @ " in line and " = " in line:
+                        qty_item, rest = line.split(" @ ", 1)
+                        _, line_total = rest.split(" = ", 1)
+                        formatted_items.append(f"{qty_item.strip()} {line_total.strip()}")
+                    else:
+                        formatted_items.append(line.strip())
+                items_str = " + ".join(formatted_items)
+                response = f"Aapka order: {items_str} = kul ₹{total_part.strip()}. Confirm karun?"
+            else:
+                response = f"Maaf kijiye, order samajh nahi aaya: {tool_result}"
+
         elif intent == "calculation":
             if tool_result and not tool_result.startswith("Tool error"):
                 try:
                     val = float(tool_result)
-                    formatted_val = f"${val:,.2f}"
+                    formatted_val = f"{val:g}" if val.is_integer() else f"{val:,.2f}"
                 except ValueError:
                     formatted_val = tool_result
 
-                response = (
-                    f"Based on shifting 3,200 {preferred_unit}/day from peak tariff ($0.22/{preferred_unit}) "
-                    f"to off-peak ($0.09/{preferred_unit}), the calculated annual arbitrage savings is {formatted_val}. "
-                    f"Factoring in a 15% demand charge reduction, total annual savings reaches approximately $189,840."
-                )
+                response = f"The calculated result is {formatted_val}."
             else:
                 response = f"I encountered an error calculating that: {tool_result}"
 
-        elif intent == "knowledge_lookup":
-            if "summarize" in transcript.lower() or "summary" in transcript.lower() or "green grid" in transcript.lower():
-                response = (
-                    "Green Grid AI is an intelligent microgrid optimization system deploying 2.4 MW of commercial "
-                    "solar PV paired with a 4.8 MWh lithium iron phosphate (LiFePO4) battery energy storage system. "
-                    "Operating at 99.4% uptime across 4 commercial sites in Bengaluru, it provides automated "
-                    "peak-shaving and energy arbitrage, saving ~$189,840 annually and avoiding 2,450 metric tons of CO2."
-                )
-            else:
-                response = tool_result or "The Green Grid AI project provides intelligent energy arbitrage and peak-shaving."
-
         else:
             response = (
-                f"I received your question: '{transcript}'. How can I assist you with Green Grid AI summaries, "
-                f"savings calculations, or microgrid telemetry?"
+                "Main aapki kirana dukaan ka voice assistant hoon — "
+                "atta, chawal, daal, tel, doodh... kisi bhi cheez ka daam ya stock pooch sakte hain."
             )
 
         timings["agent"] = (time.perf_counter() - t0) * 1000.0
@@ -403,7 +465,6 @@ class VoicePilotGraph:
             }
         except TTSError:
             timings["tts"] = (time.perf_counter() - t0) * 1000.0
-            # TTS failure should still preserve text response
             return {
                 "speech_audio_bytes": None,
                 "speech_audio_format": "none",
@@ -443,7 +504,6 @@ class VoicePilotGraph:
         """Execute full turn through the LangGraph state machine."""
         t_turn_start = time.perf_counter()
         result = await self.app.ainvoke(initial_state)
-        # Compute total latency
         timings = dict(result.get("timings") or {})
         timings["total"] = (time.perf_counter() - t_turn_start) * 1000.0
         result["timings"] = timings

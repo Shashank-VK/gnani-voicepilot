@@ -19,9 +19,9 @@
       "title": "Config + provider wiring (STT_PROVIDER/TTS_PROVIDER=gnani, factory registration, missing-key error)"
     },
     {
-      "evidence": "",
+      "evidence": "tests/test_kirana.py (15 tests) passed; tests/test_kirana.py and tests/test_agent.py: 22 passed; full suite: 90 passed (75 prior + 15 new) in pytest; ruff clean",
       "id": "gp-004",
-      "status": "pending",
+      "status": "passing",
       "title": "Kirana agent (Hinglish prompt + synthetic catalog tool + order total + confirmation)"
     },
     {
@@ -45,5 +45,5 @@
   ],
   "passing_requires_evidence": true,
   "project": "gnani-voicepilot",
-  "single_active_feature": "gp-004"
+  "single_active_feature": "gp-005"
 }

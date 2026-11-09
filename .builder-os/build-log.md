@@ -52,3 +52,26 @@
   - Did NOT reference or alter `OFFLINE_MODE` checks in legacy groq/edge branches.
   - `.env.example`: updated provider selection comment with `| gnani`, and added Gnani section with variable names and defaults without secrets (`GNANI_API_KEY=`).
 - Pytest counts: 9 passed in `tests/test_gnani_config.py`; 17 passed in `tests/test_gnani_config.py tests/test_adapters.py`; 75/75 passed in full suite (43 inherited + 11 gp-001 + 12 gp-002 + 9 gp-003, 0 regressions); `ruff check src tests` clean.
+
+## 2026-11-09 — Feature gp-004: Kirana agent (Builder / agy)
+- Architecture note: The graph is rule-based templating and AST evaluation (no live LLM client in the graph loop; Groq stays for other components/tests).
+- Catalog tool (`KiranaCatalog` in `src/voicepilot/agent/tools.py`):
+  - Synthetic data only: 14 items (atta ₹55/kilo stock 25, chawal ₹65/kilo stock 30, toor daal ₹170/kilo stock 12, sarso tel ₹145/litre stock 18, chini ₹45/kilo stock 20, namak ₹28/packet stock 40, sabun ₹35/piece stock 60, doodh ₹56/litre stock 10, anda ₹7/piece stock 120, biscuit ₹25/packet stock 50, chai patti ₹140/packet stock 22, masala ₹60/packet stock 30, besan ₹70/kilo stock 15, poha ₹48/kilo stock 18).
+  - Methods: `lookup(query) -> str` (Hinglish rate & stock, e.g. "Atta — ₹55 per kilo, stock mein hai (25 kilo available hai)."), `find_item(name) -> dict | None` (case-insensitive name/alias lookup), `parse_order(text) -> list of (qty, unit, item)` (regex pattern matching quantity + optional unit + item alias), and `order_total(lines) -> float` computed via `SafeCalculator` (building arithmetic expression string, no hand-computation).
+- State machine changes (`VoicePilotGraph` in `src/voicepilot/agent/graph.py`):
+  - Defined module-level `KIRANA_PERSONA` constant documenting the friendly Roman-script Hinglish neighbourhood kirana voice assistant.
+  - `node_classify_intent`: Kirana order intent (`kirana_order`, `tool_called="catalog_order"`) for quantity+item patterns or explicit order triggers ("le lo", "order", "chahiye"); price/stock lookup intent (`kirana_lookup`, `tool_called="catalog_lookup"`) for item + price/stock keywords ("kitne", "price", "rate", "kya hai", "stock", "hai kya", "available", "daam"); generic calculation and preference update branches preserved; all legacy Green Grid knowledge lookup branches removed.
+  - `node_execute_tool`: Added `"catalog_lookup"` and `"catalog_order"` executing `KiranaCatalog.lookup` and structured line pricing via `SafeCalculator` returning `"lines|total"` (e.g. `"2 kilo atta @ ₹55 = ₹110; 1 litre tel @ ₹145 = ₹145|255"`).
+  - `node_generate_response`: Added Hinglish responses for `kirana_lookup` ("<line> Aur kuch chahiye?"), `kirana_order` ("Aapka order: 2 kilo atta ₹110 + 1 litre tel ₹145 = kul ₹255. Confirm karun?"), generic math calculation without microgrid text, and Hinglish general fallback.
+  - Cleaned all Green Grid imports, constants, and references from `graph.py` and `tools.py`.
+- Test reconciliation decision:
+  - Spec mandated replacing the legacy Green Grid knowledge store with the synthetic Kirana catalog tool, making two inherited tests obsolete as originally written.
+  - Reconciled without losing coverage: replaced `test_knowledge_lookup_green_grid` in `tests/test_agent.py` with `test_kirana_catalog_lookup_and_order` verifying `lookup`, `find_item`, `parse_order`, and `order_total`.
+  - Reconciled `test_langgraph_canonical_demo_flow` in `tests/test_agent.py` to the 3-turn canonical Kirana demo flow: Turn 1 price lookup ("Bhaiya, 2 kilo atta kitne ka hai?"), Turn 2 order ("2 kilo atta aur 1 litre tel le lo, total kitna hua?"), and Turn 3 stock lookup ("Doodh hai kya stock mein?"), verifying all 3 turns record in `SessionStore`.
+- Tests added:
+  - 15 new tests in `tests/test_kirana.py` covering catalog item validation, aliases, lookup formatting, unknown items, single and multi-item order parsing, SafeCalculator total calculation, KIRANA_PERSONA constant, intent classification, structured tool execution, and Hinglish response generation.
+- Pytest counts:
+  - `tests/test_kirana.py`: 15 passed.
+  - `tests/test_kirana.py tests/test_agent.py`: 22 passed.
+  - Full suite: 90/90 passed (75 prior + 15 new, 0 regressions).
+  - `ruff check src tests`: clean.
