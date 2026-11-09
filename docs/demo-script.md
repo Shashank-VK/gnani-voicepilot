@@ -1,17 +1,16 @@
-# VoicePilot: Two-Minute Demo & Screen Recording Script
+# Kirana Voice Agent: Demo Walkthrough Script
 
-This script guides a 90-to-120-second walkthrough showing the core value proposition:
-1. **Happy Path Conversation**: Multi-turn dialogue with tool invocation and preference retention.
-2. **Failure Recovery**: Defensive audio validation rejecting bad audio with actionable guidance.
-3. **Cancellation & Telemetry**: Instant turn cancellation and stage latency breakdown.
+This document provides a walkthrough of the Kirana Voice Agent for live demonstration and screen recording. For the complete, shootable, timed video production script with separate narration audio cues, see [demo/DEMO-SCRIPT.md](../demo/DEMO-SCRIPT.md).
 
 ---
 
 ## Pre-Flight Check
 
 ```bash
-# 1. Start VoicePilot in demo mode
+# 1. Start Kirana Voice Agent in demo mode
 make demo
+# Or directly via uvicorn:
+# uvicorn src.voicepilot.main:app --host 0.0.0.0 --port 8000
 
 # 2. Open browser at:
 # http://localhost:8000
@@ -19,57 +18,57 @@ make demo
 
 ---
 
-## Turn 1: Project Knowledge Retrieval (0:00 - 0:30)
+## Demo Walkthrough Turns
 
-- **Action**: Click the microphone button (or the chip button **"1️⃣ Summarize Green Grid"**).
-- **Spoken Prompt**: *"Summarize the Green Grid AI project."*
+### Turn 1: Price Lookup (0:30 – 0:45)
+- **Action**: Click the microphone button or the example chip **"1️⃣ Atta Price"**.
+- **Prompt**: *"Bhaiya, 2 kilo atta kitne ka hai?"*
 - **What to Observe**:
   - State machine cycles: `idle` → `recording` → `uploading` → `transcribing` → `reasoning` → `speaking` → `idle`.
-  - Latency Waterfall updates: STT (~80 ms), Agent (~100 ms), TTS (~40 ms). Total turn under 1.5 seconds.
-  - Spoken Answer: VoicePilot summarizes the 2.4 MW solar PV array and 4.8 MWh LiFePO4 battery energy storage system (BESS) in Bengaluru operating at 99.4% uptime.
+  - Gnani Prisma v2.5 (`hi-IN`) transcribes the spoken Hinglish query.
+  - LangGraph routes to `KiranaCatalog.lookup` to retrieve Atta pricing and stock.
+  - Gnani Timbre v3.0 (`Shivani`, `hi-en`) speaks: *"Atta — ₹55 per kilo (2 kilo ka ₹110), stock mein hai (25 kilo available hai). Aur kuch chahiye?"*
 
 ---
 
-## Turn 2: Safe Tool Invocation (Calculation) (0:30 - 1:00)
-
-- **Action**: Click microphone or **"2️⃣ Calculate Savings"**.
-- **Spoken Prompt**: *"Calculate a simple savings estimate."*
+### Turn 2: Order & Multi-Item Calculation (0:45 – 1:00)
+- **Action**: Click microphone or **"2️⃣ Order Atta + Tel"**.
+- **Prompt**: *"2 kilo atta aur 1 litre tel le lo, total kitna hua?"*
 - **What to Observe**:
-  - The agent classifies intent as `calculation` and routes to the **AST-safe calculator** tool.
-  - Computes peak tariff ($0.22/kWh) vs off-peak ($0.09/kWh) arbitrage for 3,200 kWh/day.
-  - Evaluates: `3200 * (0.22 - 0.09) * 365 = 151,840.0`
-  - Voice response quotes $151,840 annual base arbitrage plus 15% demand reduction totaling ~$189,840.
+  - The agent classifies intent as `kirana_order`.
+  - `KiranaCatalog.parse_order` identifies 2 kilo atta and 1 litre tel.
+  - `SafeCalculator` executes AST-safe arithmetic: `2 * 55 + 1 * 145 = 255`.
+  - Spoken reply confirms: *"Aapka order: 2 kilo atta ₹110 + 1 litre tel ₹145 = kul ₹255. Confirm karun?"*
 
 ---
 
-## Turn 3: Context Memory & Unit Follow-Up (1:00 - 1:25)
-
-- **Action**: Click microphone or **"3️⃣ Set Unit: kWh"**.
-- **Spoken Prompt**: *"Remember my preferred unit for the follow-up as kWh."*
+### Turn 3: Stock Verification (1:00 – 1:20)
+- **Action**: Click microphone or **"3️⃣ Check Doodh Stock"**.
+- **Prompt**: *"Doodh hai kya stock mein?"*
 - **What to Observe**:
-  - VoicePilot acknowledges and persists `preferred_unit = "kWh"` inside session memory.
-  - Subsequent requests format figures according to this preference.
-  - Chat stream retains the prior 3 turns in active memory.
+  - Intent classified as `kirana_lookup`.
+  - `KiranaCatalog.lookup` checks inventory for dairy products.
+  - Spoken reply confirms: *"Doodh — ₹56 per litre, stock mein hai (10 litre available hai). Aur kuch chahiye?"*
 
 ---
 
-## Turn 4: Failure Handling & Audio Rejection (1:25 - 1:45)
-
-- **Action**: Click microphone and stay completely silent for 2 seconds.
+### Turn 4: Second Order Turn (1:20 – 1:40)
+- **Action**: Click microphone.
+- **Prompt**: *"1 packet chai patti aur 2 packet biscuit le lo, total kitna hua?"*
 - **What to Observe**:
-  - Defensive audio validator detects silence (peak amplitude below threshold / VAD zero).
-  - STT is skipped entirely (saving provider compute and budget).
-  - Actionable error banner appears:
-    `⚠️ no speech: audio is silent or unintelligible`
-  - Assistant speaks a friendly recovery notice:
-    *"I couldn't hear any speech. Please make sure your microphone is unmuted and speak clearly."*
+  - Multi-item calculation: 1 chai patti (₹140) + 2 biscuits (₹25 × 2 = ₹50). Total = ₹190.
+  - Spoken reply confirms: *"Aapka order: 1 packet chai patti ₹140 + 2 packet biscuit ₹50 = kul ₹190. Confirm karun?"*
 
 ---
 
-## Turn 5: Clean Recovery via Demo Reset (1:45 - 2:00)
-
-- **Action**: Click the **🔄 Reset Demo** button in the header.
+### Turn 5: Model Acknowledgement & Closing (2:20 – 2:45)
+- **Action**: Closing summary.
 - **What to Observe**:
-  - Calls `POST /api/demo/reset`.
-  - Reseeds synthetic demo fixtures and clears all active session caches in under 100 milliseconds.
-  - Telemetry resets to baseline; session is ready for a new clean run.
+  - Spoken confirmation naming the underlying models: *"Shukriya! Yeh kirana voice agent chalta hai Gnani Prisma v2.5 STT aur Gnani Timbre v3.0 TTS par — fast, accurate, Hinglish voice AI."*
+
+---
+
+## Defensive Audio Validation & Recovery
+
+- **Silence Rejection**: Record 2 seconds of silence. The defensive audio validator detects absence of speech and halts processing without consuming speech API credits. An actionable alert appears: `⚠️ no speech: audio is silent or unintelligible`.
+- **One-Click Demo Reset**: Clicking **🔄 Reset Demo** triggers `POST /api/demo/reset`, re-seeding synthetic catalog fixtures and clearing session caches in under 100 ms.

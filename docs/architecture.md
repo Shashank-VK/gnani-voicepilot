@@ -10,11 +10,11 @@ VoicePilot is a voice-first AI agent orchestrator engineered for low-latency tur
 flowchart LR
     Mic["Browser Mic<br/>(Web Audio)"] --> Transcode["FFmpeg Transcoder<br/>(16 kHz Mono PCM)"]
     Transcode --> Validate["Defensive Audio Validator<br/>(VAD / SNR / Clipping)"]
-    Validate --> STT["STT Adapter<br/>(Groq / Faster-Whisper / Mock)"]
+    Validate --> STT["STT Adapter<br/>(Gnani Prisma / Groq / Mock)"]
     STT --> Graph["LangGraph Turn Orchestrator"]
-    Graph --> Tools["Safe Tools<br/>(Calculator / Green Grid KB)"]
+    Graph --> Tools["Safe Tools<br/>(SafeCalculator / KiranaCatalog)"]
     Tools --> Graph
-    Graph --> TTS["TTS Adapter<br/>(Edge Neural / Mock)"]
+    Graph --> TTS["TTS Adapter<br/>(Gnani Timbre / Edge / Mock)"]
     TTS --> Reply["Browser Audio Reply<br/>+ Latency Waterfall"]
 ```
 
@@ -91,7 +91,7 @@ Turn latency is measured and reported across five distinct stages:
 1. **Upload (`upload`)**: Network transit from browser to server.
 2. **Audio Validation (`validate_audio`)**: FFmpeg transcoding to 16 kHz PCM + short-time frame RMS energy analysis.
 3. **STT (`stt`)**: Speech-to-text transcription (Groq Whisper cloud vs faster-whisper local).
-4. **Agent Reasoning & Tools (`agent`)**: Intent classification, safe AST calculator, Green Grid AI knowledge lookup, prompt assembly.
+4. **Agent Reasoning & Tools (`agent`)**: Intent classification, safe AST calculator (`SafeCalculator`), synthetic Kirana catalog lookup (`KiranaCatalog`), prompt assembly.
 5. **TTS Synthesis (`tts`)**: Neural speech synthesis (Edge TTS or local mock).
 
 ### Cloud vs Local Trade-Offs
