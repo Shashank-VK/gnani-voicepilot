@@ -1,0 +1,24 @@
+# Build log — gnani-voicepilot
+
+## 2026-11-09 ~09:05 IST — Specs written (Builder)
+- Base: copy of shipped VoicePilot (commit e19ff8c) into `builds/gnani-voicepilot/`, fresh git repo. Shipped repo untouched.
+- Gnani contracts verified from docs.gnani.ai: STT REST (Prisma v2.5, multipart, `hi-IN`, `format=transcribe`, bias_list+bias_score), TTS REST (Timbre v3.0, voice Shivani, `hi-en`, wav 16kHz mono, JSON body). Auth `X-API-Key-ID`.
+- Challenge facts verified from gnani.ai/internship: tags #GnaniAI + #GreatIndianAIInternshipChallenge; post live before submit; one nominated post link per platform; kirana Hinglish assistant is the page's own suggested idea (Mixed Vibes + Real Deal); Evon NOT on API platform.
+- Submission form: https://forms.cloud.microsoft/r/dfFShbp7W7 — live-browser field read in flight (browser-task:caa359fd-4c3b-517d-9564-7e6b2264b2c5). Discord invite: https://discord.gg/utQr5Txt.
+- Key: ~/.config/provider-keys/gnani.key (600) — runtime only, never printed/committed.
+
+## 2026-11-09 ~09:05 IST — ENGINE SPLIT (main's correction, overrides agy-only line)
+- Build uses BOTH opencode and agy (both signed in, verified working this morning by main: opencode 1 credential, OpenCode api Console key "muse-vm", `opencode run` works headless; agy 1.5.2, authenticated as his 51 account).
+- AGY (builder): implements gp-001..gp-006, TDD per feature, headless `agy --dangerously-skip-permissions -p` with prompts via files.
+- OPENCODE (independent verifier + finisher): after EACH feature lands, fresh-context review with `opencode run` (default model, never a free-tagged model) — diff vs specs.md, findings to this build log, read-only (no source edits during review; agy fixes issues). Owns gp-007 (demo script + README + GitHub publish) after gp-006, and runs the final independent verify (.builder-os/init.sh from a clean shell).
+- If either engine hangs (>150s, no output): kill, retry once, continue with the other engine for that step, note it here. Never stall the build on a hung engine.
+- OPENCODE SMOKE FAILURE 2026-11-09 ~09:05 IST: `opencode run` produced ZERO output on two attempts (120s timeout, then 170s timeout, PIPE_EXIT:124 both times; `opencode --version` = 1.19.4, `opencode run --help` works). Per the split rules, the build continues with agy; opencode reviews/gp-007 will be re-attempted later (different flags / longer window) and, if still unresponsive, agy covers them with the deviation noted here.
+- BUILDER-OS still governs; same deadline (demo-ready today Mon 9 Nov; post Tue morning; submit Tue 23:59 IST).
+- CORRECTION 2026-11-09 ~09:01 IST (main): build uses BOTH opencode and agy, not agy alone. Both verified working this morning by main (opencode: 1 credential, OpenCode api, Console key "muse-vm", `opencode run` headless; agy 1.5.2, authed as 51). Split sent to build agent: agy builds gp-001..gp-006; opencode fresh-context-reviews each feature + owns gp-007 (demo script + README + publish) + final independent verify. BUILDER-OS + deadline unchanged.
+- FORM FIELDS VERIFIED 2026-11-09 ~09:01 IST (live read, no sign-in, form open): "The Great Indian Internship Challenge Project Submission", 7 single-line text fields — Full Name*, Registered Email ID*, teammate email (optional), Institution*, Project URL* (must include a ≤1-page solution pitch doc), video demo link* (2–3 minute video required), LinkedIn post for bonus awards (optional). TWO SPEC CORRECTIONS from this: (a) submission video is 2–3 minutes, NOT 60s (60s cut is only a social/awards extra); (b) repo needs a one-page PITCH.md. Specs.md §5/§6/§8 updated; correction sent to build agent for gp-007.
+
+## 2026-11-09 — Feature gp-001: Gnani STT adapter (Builder / agy)
+- Tests added: 11 tests in `tests/test_gnani_stt.py` covering mocked 200 success, request shape (multipart file `audio.wav`, `language_code="hi-IN"`, `format="transcribe"`, kirana `bias_list`, `bias_score=1.0`, omitted model), empty transcript, 401/403 auth errors, 429 rate limit backoff retry + retry-then-success, 402 credits error, 500 retry + error, missing API key (no HTTP call), and timeout retry.
+- SDK-vs-httpx decision: `gnani-vachana` 0.9.0 installed cleanly in `.venv`, but `GnaniSTTClient` uses synchronous `requests`, transmits audio under `audio_file` instead of `file`, lacks `bias_list`/`bias_score` support for REST (only batch has it), and is blocking. Direct `httpx.AsyncClient` multipart calls implemented, strictly mirroring `groq.py` structure.
+- Base URL source: derived from `gnani-vachana` SDK (`gnani/stt/client.py`: `DEFAULT_BASE_URL = "https://api.vachana.ai"`, `STT_ENDPOINT = "/stt/v3"` -> endpoint `https://api.vachana.ai/stt/v3`).
+- Pytest counts: 11 passed in `tests/test_gnani_stt.py`; 19 passed in `tests/test_gnani_stt.py tests/test_adapters.py`; 54/54 passed in full suite (43 inherited + 11 new tests, 0 regressions); `ruff check src tests` clean.
