@@ -1,6 +1,7 @@
 """Gnani Prisma v2.5 STT adapter with timeout, retry-once, and kirana bias list."""
 
 import asyncio
+import json
 import logging
 import time
 
@@ -69,11 +70,15 @@ class GnaniSTTAdapter(SpeechToTextAdapter):
 
         t0 = time.perf_counter()
         headers = {"X-API-Key-ID": self.api_key}
-        files = {"file": ("audio.wav", wav_bytes, "audio/wav")}
+        # Multipart field name is "audio_file" per the official SDK
+        # (gnani/stt/client.py: files = {"audio_file": (filename, audio_bytes)})
+        # and the docs' 422 example (missing "audio_file").
+        files = {"audio_file": ("audio.wav", wav_bytes, "audio/wav")}
         data: dict[str, object] = {
             "language_code": self.language_code,
             "format": "transcribe",
-            "bias_list": self.bias_list,
+            # Lists go as JSON arrays (SDK _build_rest_form does the same).
+            "bias_list": json.dumps(self.bias_list, ensure_ascii=False),
             "bias_score": self.bias_score,
         }
 

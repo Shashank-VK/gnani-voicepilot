@@ -1,5 +1,6 @@
 """Tests for Gnani STT adapter (Prisma v2.5 REST, hi-IN, bias list)."""
 
+import json
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -73,10 +74,11 @@ async def test_gnani_stt_request_shape(speech_wav):
     headers = call_kwargs.get("headers", {})
     assert headers.get("X-API-Key-ID") == "mock-gnani-key"
 
-    # Verify multipart file part named audio.wav
+    # Verify multipart file part named audio.wav (field name "audio_file"
+    # per the official SDK + docs 422 example)
     files = call_kwargs.get("files", {})
-    assert "file" in files
-    file_part = files["file"]
+    assert "audio_file" in files
+    file_part = files["audio_file"]
     # ("audio.wav", speech_wav, "audio/wav")
     assert file_part[0] == "audio.wav"
     assert file_part[1] == speech_wav
@@ -87,8 +89,8 @@ async def test_gnani_stt_request_shape(speech_wav):
     assert data.get("format") == "transcribe"
     assert data.get("bias_score") == 1.0
 
-    # Verify bias_list contains all required kirana terms
-    bias_list = data.get("bias_list", [])
+    # Verify bias_list is a JSON array containing all required kirana terms
+    bias_list = json.loads(data.get("bias_list", "[]"))
     for term in EXPECTED_KIRANA_TERMS:
         assert term in bias_list
 
