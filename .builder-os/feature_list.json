@@ -1,0 +1,49 @@
+{
+  "features": [
+    {
+      "evidence": "tests/test_gnani_stt.py (11 tests) passed; tests/test_gnani_stt.py and tests/test_adapters.py: 19 passed; full suite: 54 passed (43 inherited + 11 new) in pytest; ruff clean",
+      "id": "gp-001",
+      "status": "passing",
+      "title": "Gnani STT adapter (Prisma v2.5 REST, hi-IN, bias list)"
+    },
+    {
+      "evidence": "tests/test_gnani_tts.py (12 tests) passed; tests/test_gnani_tts.py and tests/test_adapters.py: 20 passed; full suite: 66 passed (43 inherited + 11 gp-001 + 12 gp-002) in pytest; ruff clean",
+      "id": "gp-002",
+      "status": "passing",
+      "title": "Gnani TTS adapter (Timbre v3.0 REST, Shivani, hi-en, wav 16kHz)"
+    },
+    {
+      "evidence": "tests/test_gnani_config.py (9 tests) passed; tests/test_gnani_config.py and tests/test_adapters.py: 17 passed; full suite: 75 passed (43 inherited + 11 gp-001 + 12 gp-002 + 9 gp-003) in pytest; ruff clean",
+      "id": "gp-003",
+      "status": "passing",
+      "title": "Config + provider wiring (STT_PROVIDER/TTS_PROVIDER=gnani, factory registration, missing-key error)"
+    },
+    {
+      "evidence": "tests/test_kirana.py (15 tests) passed; tests/test_kirana.py and tests/test_agent.py: 22 passed; full suite: 90 passed (75 prior + 15 new) in pytest; ruff clean",
+      "id": "gp-004",
+      "status": "passing",
+      "title": "Kirana agent (Hinglish prompt + synthetic catalog tool + order total + confirmation)"
+    },
+    {
+      "evidence": "tests/test_ui_rebrand.py (7 tests) passed; tests/test_ui_rebrand.py and tests/test_api.py: 18 passed; full suite: 97 passed (90 prior + 7 new) in pytest; ruff clean; zero Green Grid references",
+      "id": "gp-005",
+      "status": "passing",
+      "title": "Gradio rebrand + Hinglish examples + demo fixtures"
+    },
+    {
+      "evidence": "scripts/live_smoke.py run 3 (2026-11-09): Step A TTS PASS (291884 bytes, 9.12s, 4889.0ms, hi-en); Step B STT PASS (transcript 'Namaste, main aapki kirana dukaan ka voice assistant hoon 2 kilo atta ₹110 ka hai aur 1 litre tel ₹145 ka', 2171.9ms, 6/6 kirana terms matched); Step C end-to-end PASS (response 'Aapka order: 2 kilo atta ₹110 + 1 litre tel ₹145 = kul ₹255. Confirm karun?', total 7579.1ms, speech 332844 bytes/10.40s); Step D fixtures PASS (5 WAVs: 250924/291884/189484/317484/391724 bytes). Full suite 106 passed, ruff clean. Defect found in run 2 and fixed: Prisma returns geminated 'अट्टा' — added to normalize map + test.",
+      "id": "gp-006",
+      "status": "passing",
+      "title": "Live smoke test on real Gnani key (STT + TTS, short calls, evidence logged)"
+    },
+    {
+      "evidence": "tests/test_gp007_docs.py (5 tests) passed; full suite 111 passed (106 prior + 5 new), ruff clean, init.sh exit 0. README rewritten (Kirana Voice Agent, PITCH.md linked line 9, exact live-smoke latencies, no Green Grid/Gradio), PITCH.md 425 words, demo/DEMO-SCRIPT.md 2-3 min shootable script, docs Green Grid purge 0 hits. Public repo https://github.com/Shashank-VK/gnani-voicepilot (PUBLIC, master @ 99232e8).",
+      "id": "gp-007",
+      "status": "passing",
+      "title": "Demo script (2-3 min, 4 beats + 2nd order turn + stock Q + models closing) + one-page PITCH.md + README + publish public repo Shashank-VK/gnani-voicepilot"
+    }
+  ],
+  "passing_requires_evidence": true,
+  "project": "gnani-voicepilot",
+  "single_active_feature": null
+}

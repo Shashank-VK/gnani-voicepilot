@@ -86,6 +86,7 @@ class WebSocketTurnSession:
         self.audio_buffer.clear()
 
         from voicepilot.server.app import get_app_graph
+
         graph: VoicePilotGraph = get_app_graph()
 
         t_turn_start = time.perf_counter()
@@ -115,7 +116,9 @@ class WebSocketTurnSession:
                 event_type="error",
                 turn_id=turn_id,
                 stage=result.get("error_stage", "unknown"),
-                latency_ms=result.get("timings", {}).get(result.get("error_stage", "validate_audio"), 0.0),
+                latency_ms=result.get("timings", {}).get(
+                    result.get("error_stage", "validate_audio"), 0.0
+                ),
                 payload={
                     "code": result.get("error_code", "error"),
                     "message": result.get("error", "Unknown error"),
@@ -221,7 +224,7 @@ async def voice_websocket_endpoint(websocket: WebSocket, session_id: str):
                 continue
 
             msg_type = msg.get("type")
-            turn_id = msg.get("turn_id", f"turn_{int(time.time()*1000)}")
+            turn_id = msg.get("turn_id", f"turn_{int(time.time() * 1000)}")
 
             if msg_type == "turn.cancel":
                 await session_manager.handle_cancel(turn_id)
@@ -233,9 +236,7 @@ async def voice_websocket_endpoint(websocket: WebSocket, session_id: str):
             elif msg_type == "audio.end":
                 client_upload_ms = float(msg.get("client_upload_ms", 0.0))
                 # Run turn asynchronously so client can send turn.cancel if needed
-                asyncio.create_task(
-                    session_manager.handle_audio_end(turn_id, client_upload_ms)
-                )
+                asyncio.create_task(session_manager.handle_audio_end(turn_id, client_upload_ms))
 
             elif msg_type == "ping":
                 await websocket.send_text(json.dumps({"type": "pong", "time": time.time()}))

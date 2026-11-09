@@ -163,7 +163,9 @@ async def test_graph_intent_classification():
     graph = VoicePilotGraph(MockSTTAdapter(), MockTTSAdapter())
 
     # Order intent
-    turn_order = await graph.node_classify_intent({"raw_transcript": "2 kilo atta aur 1 litre tel le lo"})
+    turn_order = await graph.node_classify_intent(
+        {"raw_transcript": "2 kilo atta aur 1 litre tel le lo"}
+    )
     assert turn_order["intent"] == "kirana_order"
     assert turn_order["tool_called"] == "catalog_order"
 
@@ -171,7 +173,9 @@ async def test_graph_intent_classification():
     assert turn_order_chahiye["intent"] == "kirana_order"
 
     # Lookup intent
-    turn_lookup = await graph.node_classify_intent({"raw_transcript": "Bhaiya, 2 kilo atta kitne ka hai?"})
+    turn_lookup = await graph.node_classify_intent(
+        {"raw_transcript": "Bhaiya, 2 kilo atta kitne ka hai?"}
+    )
     assert turn_lookup["intent"] == "kirana_lookup"
     assert turn_lookup["tool_called"] == "catalog_lookup"
 

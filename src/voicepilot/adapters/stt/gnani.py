@@ -117,7 +117,12 @@ KIRANA_TERM_MAP = {
 
 _NUMBER_UNIT_RE = re.compile(r"\b(ek|do)\s+(kilo|litre|liter|packet|piece)\b", re.IGNORECASE)
 _WORD_MAP_RE = re.compile(
-    "(" + "|".join(re.escape(w) for w in sorted({**DEVANAGARI_NUMBER_WORDS, **KIRANA_TERM_MAP}, key=len, reverse=True)) + ")",
+    "("
+    + "|".join(
+        re.escape(w)
+        for w in sorted({**DEVANAGARI_NUMBER_WORDS, **KIRANA_TERM_MAP}, key=len, reverse=True)
+    )
+    + ")",
 )
 
 
@@ -132,7 +137,9 @@ def normalize_hinglish_transcript(text: str) -> str:
     word_map = {**DEVANAGARI_NUMBER_WORDS, **KIRANA_TERM_MAP}
     out = _WORD_MAP_RE.sub(lambda m: word_map[m.group(1)], out)
     # Roman number words, only when directly before a unit (avoids "do" as a verb).
-    out = _NUMBER_UNIT_RE.sub(lambda m: {"ek": "1", "do": "2"}[m.group(1).lower()] + " " + m.group(2), out)
+    out = _NUMBER_UNIT_RE.sub(
+        lambda m: {"ek": "1", "do": "2"}[m.group(1).lower()] + " " + m.group(2), out
+    )
     return out
 
 
@@ -172,9 +179,7 @@ class GnaniSTTAdapter(SpeechToTextAdapter):
         self.max_retries = max_retries
         self.endpoint = endpoint
         self.language_code = language_code
-        self.bias_list = (
-            list(DEFAULT_KIRANA_BIAS_LIST) if bias_list is None else list(bias_list)
-        )
+        self.bias_list = list(DEFAULT_KIRANA_BIAS_LIST) if bias_list is None else list(bias_list)
         self.bias_score = bias_score
 
     async def transcribe(self, wav_bytes: bytes, sample_rate: int = 16000) -> TranscriptionResult:

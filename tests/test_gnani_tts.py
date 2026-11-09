@@ -68,6 +68,7 @@ async def test_gnani_tts_repairs_bogus_wav_header():
         assert wf.getframerate() == 16000
         assert wf.getnchannels() == 1
 
+
 MOCK_WAV_BYTES = (
     b"RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x80>\x00\x00\x00}\x00\x00"
     b"\x02\x00\x10\x00data\x00\x00\x00\x00"
@@ -199,7 +200,10 @@ async def test_gnani_tts_rate_limit_429_retry_exhausted():
     )
 
     mock_post = AsyncMock(return_value=mock_resp_429)
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         with pytest.raises(TTSError) as exc_info:
             await adapter.synthesize("Namaste")
 
@@ -224,7 +228,10 @@ async def test_gnani_tts_rate_limit_429_then_200_succeeds():
     )
 
     mock_post = AsyncMock(side_effect=[mock_resp_429, mock_resp_200])
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         result = await adapter.synthesize("Namaste")
 
     assert result.audio_bytes == MOCK_WAV_BYTES
@@ -260,7 +267,10 @@ async def test_gnani_tts_server_error_500_retry():
     )
 
     mock_post = AsyncMock(return_value=mock_resp_500)
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         with pytest.raises(TTSError) as exc_info:
             await adapter.synthesize("Namaste")
 
@@ -295,7 +305,10 @@ async def test_gnani_tts_timeout_retry_exhausted():
     adapter = GnaniTTSAdapter(api_key="mock-key", max_retries=1, timeout_seconds=2.0)
     mock_post = AsyncMock(side_effect=httpx.TimeoutException("Timed out"))
 
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         with pytest.raises(TTSError) as exc_info:
             await adapter.synthesize("Namaste")
 

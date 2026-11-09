@@ -158,7 +158,7 @@ async def process_voice_turn(
     client_upload_ms: float | None = Form(0.0),
 ):
     """HTTP endpoint for audio turn upload and full LangGraph execution."""
-    turn_identifier = turn_id or f"turn_{int(time.time()*1000)}"
+    turn_identifier = turn_id or f"turn_{int(time.time() * 1000)}"
 
     store = get_session_store()
     store.get_or_create_session(session_id)
@@ -172,6 +172,7 @@ async def process_voice_turn(
 
     # Fetch app graph
     from voicepilot.server.app import get_app_graph
+
     graph: VoicePilotGraph = get_app_graph()
 
     timings = {

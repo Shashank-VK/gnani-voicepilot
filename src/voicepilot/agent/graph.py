@@ -89,7 +89,11 @@ class VoicePilotGraph:
         builder.add_conditional_edges(
             "transcribe",
             self.route_after_transcribe,
-            {"classify_intent": "classify_intent", "recoverable_message": "recoverable_message", "END": END},
+            {
+                "classify_intent": "classify_intent",
+                "recoverable_message": "recoverable_message",
+                "END": END,
+            },
         )
 
         builder.add_conditional_edges(
@@ -103,7 +107,11 @@ class VoicePilotGraph:
         builder.add_conditional_edges(
             "generate_response",
             self.route_after_response,
-            {"synthesize_speech": "synthesize_speech", "recoverable_message": "recoverable_message", "END": END},
+            {
+                "synthesize_speech": "synthesize_speech",
+                "recoverable_message": "recoverable_message",
+                "END": END,
+            },
         )
 
         builder.add_edge("synthesize_speech", END)
@@ -256,7 +264,9 @@ class VoicePilotGraph:
         q = transcript.lower()
 
         # Check for user preference update:
-        unit_match = re.search(r"\b(preferred unit|unit|preferred)\b.*?\b(kwh|mwh|dollars?|usd|inr)\b", q)
+        unit_match = re.search(
+            r"\b(preferred unit|unit|preferred)\b.*?\b(kwh|mwh|dollars?|usd|inr)\b", q
+        )
         if unit_match:
             unit = unit_match.group(2).upper()
             if "DOLLAR" in unit or "USD" in unit:
@@ -265,7 +275,9 @@ class VoicePilotGraph:
                 unit = "kWh"
             elif "MWH" in unit:
                 unit = "MWh"
-            self.session_store.set_preference(state.get("session_id", "default"), "preferred_unit", unit)
+            self.session_store.set_preference(
+                state.get("session_id", "default"), "preferred_unit", unit
+            )
             return {"intent": "preference_update", "tool_called": None}
 
         # Check for Kirana intents:
@@ -273,7 +285,17 @@ class VoicePilotGraph:
         parsed_order = KiranaCatalog.parse_order(transcript)
         has_order_pattern = len(parsed_order) > 0
 
-        lookup_keywords = ["kitne", "price", "rate", "kya hai", "stock", "hai kya", "available", "daam", "bhav"]
+        lookup_keywords = [
+            "kitne",
+            "price",
+            "rate",
+            "kya hai",
+            "stock",
+            "hai kya",
+            "available",
+            "daam",
+            "bhav",
+        ]
         has_lookup_kw = any(kw in q for kw in lookup_keywords)
 
         order_keywords = ["le lo", "order", "chahiye", "pack kar", "de do", "bhej do"]
@@ -281,7 +303,9 @@ class VoicePilotGraph:
 
         # 1. Order intent:
         # User explicitly orders with an item, or gave quantity+item pattern and is not just asking for price/stock
-        if (has_order_kw and (has_catalog_item or has_order_pattern)) or (has_order_pattern and not has_lookup_kw):
+        if (has_order_kw and (has_catalog_item or has_order_pattern)) or (
+            has_order_pattern and not has_lookup_kw
+        ):
             return {
                 "intent": "kirana_order",
                 "tool_called": "catalog_order",
@@ -433,7 +457,7 @@ class VoicePilotGraph:
 
         # Save turn to session memory
         turn_rec = TurnRecord(
-            turn_id=state.get("turn_id", f"turn_{int(time.time()*1000)}"),
+            turn_id=state.get("turn_id", f"turn_{int(time.time() * 1000)}"),
             user_transcript=transcript,
             assistant_response=response,
             tool_used=tool_name,

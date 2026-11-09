@@ -41,7 +41,9 @@ class GroqSTTAdapter(SpeechToTextAdapter):
             if self.fallback_adapter:
                 logger.warning("Groq API key not provided; falling back to offline adapter")
                 return await self.fallback_adapter.transcribe(wav_bytes, sample_rate)
-            raise ProviderAuthError("GROQ_API_KEY is not configured", provider="groq", status_code=401)
+            raise ProviderAuthError(
+                "GROQ_API_KEY is not configured", provider="groq", status_code=401
+            )
 
         t0 = time.perf_counter()
         headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -52,7 +54,9 @@ class GroqSTTAdapter(SpeechToTextAdapter):
 
         for attempt in range(self.max_retries + 1):
             try:
-                async with httpx.AsyncClient(timeout=self.timeout_seconds, trust_env=False) as client:
+                async with httpx.AsyncClient(
+                    timeout=self.timeout_seconds, trust_env=False
+                ) as client:
                     response = await client.post(
                         self.endpoint,
                         headers=headers,

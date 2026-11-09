@@ -76,7 +76,9 @@ class SafeCalculator:
                 func = cls.ALLOWED_FUNCTIONS[node.func.id]
                 args = [cls._eval_node(arg) for arg in node.args]
                 return func(*args)
-            raise ToolExecutionError(f"Unsupported function call: {getattr(node.func, 'id', 'unknown')}")
+            raise ToolExecutionError(
+                f"Unsupported function call: {getattr(node.func, 'id', 'unknown')}"
+            )
 
         raise ToolExecutionError(f"Unsupported expression node: {type(node).__name__}")
 
@@ -240,7 +242,9 @@ class KiranaCatalog:
                 return cls._make_item(item, matched=clean)
         clean_no_punct = re.sub(r"[^\w\s]", "", clean).strip()
         for item in cls.ITEMS:
-            if clean_no_punct == item["name"].lower() or clean_no_punct in [a.lower() for a in item["aliases"]]:
+            if clean_no_punct == item["name"].lower() or clean_no_punct in [
+                a.lower() for a in item["aliases"]
+            ]:
                 return cls._make_item(item, matched=clean_no_punct)
         return None
 
@@ -310,7 +314,9 @@ class KiranaCatalog:
 
         sorted_aliases = sorted(alias_to_item.keys(), key=len, reverse=True)
         item_regex = "|".join(re.escape(a) for a in sorted_aliases)
-        unit_regex = r"(?:kilo[s]?|kg[s]?|litre[s]?|liter[s]?|\bl\b|packet[s]?|pkt[s]?|piece[s]?|pc[s]?)"
+        unit_regex = (
+            r"(?:kilo[s]?|kg[s]?|litre[s]?|liter[s]?|\bl\b|packet[s]?|pkt[s]?|piece[s]?|pc[s]?)"
+        )
 
         pattern = re.compile(
             rf"\b(?P<qty>\d+)\s*(?:(?P<unit>{unit_regex})\s+)?(?:ka\s+|ki\s+|ke\s+)?(?P<item>{item_regex})\b",

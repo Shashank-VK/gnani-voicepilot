@@ -126,7 +126,9 @@ async def main_async() -> int:
     except TTSError as exc:
         err_msg = redact(str(exc), api_key)
         if "400" in err_msg and tts_language == "hi-en":
-            print("  [!] TTS returned 400 on language 'hi-en'. Retrying once with language 'auto'...")
+            print(
+                "  [!] TTS returned 400 on language 'hi-en'. Retrying once with language 'auto'..."
+            )
             tts_language = "auto"
             tts_adapter = GnaniTTSAdapter(
                 api_key=api_key,
@@ -192,7 +194,7 @@ async def main_async() -> int:
 
     kirana_terms = ["atta", "tel", "kilo", "litre", "110", "145"]
     matched_terms = [term for term in kirana_terms if term in transcript.lower()]
-    print(f"  ✓ Transcript: \"{transcript}\"")
+    print(f'  ✓ Transcript: "{transcript}"')
     print(f"  ✓ Latency: {stt_res.latency_ms:.1f}ms, Matched kirana terms: {matched_terms}")
 
     # Check that at least one kirana term is present (atta, tel, kilo, litre).
@@ -247,7 +249,7 @@ async def main_async() -> int:
     timings = graph_result.get("timings", {})
     total_ms = timings.get("total", 0.0)
 
-    print(f"  ✓ Turn response text: \"{response_text}\"")
+    print(f'  ✓ Turn response text: "{response_text}"')
     print(f"  ✓ Latencies: {timings}")
 
     # Assert response mentions ₹255 or the order total 255
@@ -295,7 +297,10 @@ async def main_async() -> int:
     )
     if proc.returncode != 0:
         err_out = redact(proc.stderr + "\n" + proc.stdout, api_key)
-        print(f"  [FAIL] demo/generate_fixtures.py exited with {proc.returncode}:\n{err_out}", file=sys.stderr)
+        print(
+            f"  [FAIL] demo/generate_fixtures.py exited with {proc.returncode}:\n{err_out}",
+            file=sys.stderr,
+        )
         return 1
 
     demo_dir = ROOT_DIR / "demo"
@@ -316,7 +321,9 @@ async def main_async() -> int:
         data = fpath.read_bytes()
         info = verify_wav(data, 16000, 1)
         fixture_details.append({"filename": fname, **info})
-        print(f"  ✓ {fname}: {info['byte_count']} bytes, {info['duration_s']:.2f}s ({info['sample_rate']}Hz mono)")
+        print(
+            f"  ✓ {fname}: {info['byte_count']} bytes, {info['duration_s']:.2f}s ({info['sample_rate']}Hz mono)"
+        )
 
     summary["step_d"] = {
         "status": "PASS",
@@ -332,16 +339,20 @@ async def main_async() -> int:
     print(f"Step A (TTS Synthesis):       {summary['step_a']['status']}")
     print(f"  - TTS Language:             {summary['step_a']['language']}")
     print(f"  - Latency:                  {summary['step_a']['latency_ms']:.1f} ms")
-    print(f"  - Audio:                    {summary['step_a']['byte_count']} bytes ({summary['step_a']['duration_s']:.2f}s)")
+    print(
+        f"  - Audio:                    {summary['step_a']['byte_count']} bytes ({summary['step_a']['duration_s']:.2f}s)"
+    )
     print(f"Step B (STT Transcription):   {summary['step_b']['status']}")
     print(f"  - Latency:                  {summary['step_b']['latency_ms']:.1f} ms")
-    print(f"  - Transcript:               \"{summary['step_b']['transcript']}\"")
+    print(f'  - Transcript:               "{summary["step_b"]["transcript"]}"')
     print(f"  - Matched Terms:            {summary['step_b']['matched_terms']}")
     print(f"Step C (End-to-End Turn):     {summary['step_c']['status']}")
     print(f"  - Total Latency:            {summary['step_c']['total_latency_ms']:.1f} ms")
     print(f"  - Waterfall:                {summary['step_c']['timings']}")
-    print(f"  - Response Text:            \"{summary['step_c']['response_text']}\"")
-    print(f"  - Response Audio:           {summary['step_c']['speech_byte_count']} bytes ({summary['step_c']['speech_duration_s']:.2f}s)")
+    print(f'  - Response Text:            "{summary["step_c"]["response_text"]}"')
+    print(
+        f"  - Response Audio:           {summary['step_c']['speech_byte_count']} bytes ({summary['step_c']['speech_duration_s']:.2f}s)"
+    )
     print(f"Step D (Demo Audio Fixtures): {summary['step_d']['status']}")
     for fx in summary["step_d"]["fixtures"]:
         print(f"  - {fx['filename']}: {fx['byte_count']} bytes, {fx['duration_s']:.2f}s")

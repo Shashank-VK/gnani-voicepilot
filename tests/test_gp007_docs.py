@@ -26,8 +26,12 @@ def test_readme_contains_gnani_kirana_and_no_legacy_project():
     assert legacy_pattern_b not in content.lower()
 
     # Must NOT claim Gradio or Evon LLM
-    assert "gradio" not in content.lower(), "README must not claim Gradio (FastAPI + static HTML/JS UI only)"
-    assert "evon" not in content.lower(), "README must not claim Evon LLM (not on Gnani API platform)"
+    assert "gradio" not in content.lower(), (
+        "README must not claim Gradio (FastAPI + static HTML/JS UI only)"
+    )
+    assert "evon" not in content.lower(), (
+        "README must not claim Evon LLM (not on Gnani API platform)"
+    )
 
     # Must document the verified live-smoke latencies
     assert "4,889.0" in content or "4889.0" in content

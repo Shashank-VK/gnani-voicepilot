@@ -31,7 +31,10 @@ def test_normalize_hinglish_geminated_atta():
     # kirana agent's parse_order only matches Roman "atta", so this must map.
     raw = "नमस्ते, मैं आपकी किराना दुकान का वॉइस असिस्टेंट हूँ 2 किलो अट्टा ₹110 का है और एक लीटर टेल ₹145 का"
     out = normalize_hinglish_transcript(raw)
-    assert out == "Namaste, main aapki kirana dukaan ka voice assistant hoon 2 kilo atta ₹110 ka hai aur 1 litre tel ₹145 ka"
+    assert (
+        out
+        == "Namaste, main aapki kirana dukaan ka voice assistant hoon 2 kilo atta ₹110 ka hai aur 1 litre tel ₹145 ka"
+    )
     assert "अट्टा" not in out
 
 
@@ -64,6 +67,7 @@ async def test_gnani_stt_devanagari_transcript_normalized(speech_wav):
         result = await adapter.transcribe(speech_wav)
 
     assert result.text == "2 kilo atta aur 1 litre tel"
+
 
 EXPECTED_KIRANA_TERMS = [
     "atta",
@@ -211,7 +215,10 @@ async def test_gnani_stt_rate_limit_429_retry_exhausted(speech_wav):
     )
 
     mock_post = AsyncMock(return_value=mock_resp_429)
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         with pytest.raises(ProviderRateLimitError) as exc_info:
             await adapter.transcribe(speech_wav)
 
@@ -236,7 +243,10 @@ async def test_gnani_stt_rate_limit_429_then_200_succeeds(speech_wav):
     )
 
     mock_post = AsyncMock(side_effect=[mock_resp_429, mock_resp_200])
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         result = await adapter.transcribe(speech_wav)
 
     assert result.text == "chawal"
@@ -273,7 +283,10 @@ async def test_gnani_stt_server_error_500_retry(speech_wav):
     )
 
     mock_post = AsyncMock(return_value=mock_resp_500)
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         with pytest.raises(ProviderServiceError) as exc_info:
             await adapter.transcribe(speech_wav)
 
@@ -302,7 +315,10 @@ async def test_gnani_stt_timeout_retry_exhausted(speech_wav):
     adapter = GnaniSTTAdapter(api_key="mock-key", max_retries=1, timeout_seconds=2.0)
     mock_post = AsyncMock(side_effect=httpx.TimeoutException("Timed out"))
 
-    with patch("httpx.AsyncClient.post", mock_post), patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+    with (
+        patch("httpx.AsyncClient.post", mock_post),
+        patch("asyncio.sleep", AsyncMock()) as mock_sleep,
+    ):
         with pytest.raises(ProviderTimeoutError) as exc_info:
             await adapter.transcribe(speech_wav)
 

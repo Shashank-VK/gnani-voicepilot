@@ -15,21 +15,15 @@ class TurnRecord(BaseModel):
     tool_used: str | None = None
     tool_output: str | None = None
     latencies: dict[str, float] = Field(default_factory=dict)
-    timestamp: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class SessionData(BaseModel):
     """Session container with 3-turn memory window and user preferences."""
 
     session_id: str
-    created_at: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
-    updated_at: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     preferences: dict[str, str] = Field(default_factory=dict)
     turns: list[TurnRecord] = Field(default_factory=list)
 
@@ -68,6 +62,7 @@ class SessionStore:
     def create_session(self, session_id: str | None = None) -> SessionData:
         with self._lock:
             import uuid
+
             sid = session_id or f"sess_{uuid.uuid4().hex[:12]}"
             session = SessionData(session_id=sid)
             self._sessions[sid] = session

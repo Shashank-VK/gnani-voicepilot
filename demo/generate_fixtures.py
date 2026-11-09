@@ -57,14 +57,18 @@ async def generate_fixtures(api_key: str) -> None:
         speed=1.0,
     )
 
-    print(f"Generating {len(DEMO_TURNS)} demo audio fixtures using Gnani Timbre v3.0 (Shivani, hi-en)...")
+    print(
+        f"Generating {len(DEMO_TURNS)} demo audio fixtures using Gnani Timbre v3.0 (Shivani, hi-en)..."
+    )
     for item in DEMO_TURNS:
         dest_path = demo_dir / item["filename"]
         print(f"Synthesizing {item['turn']} -> {item['filename']}...")
         result = await adapter.synthesize(item["text"])
 
         dest_path.write_bytes(result.audio_bytes)
-        print(f"  ✓ Saved {len(result.audio_bytes)} bytes ({result.latency_ms:.1f}ms) to {dest_path.name}")
+        print(
+            f"  ✓ Saved {len(result.audio_bytes)} bytes ({result.latency_ms:.1f}ms) to {dest_path.name}"
+        )
 
         # Serialize calls with a short delay to respect single-request concurrency
         await asyncio.sleep(0.5)

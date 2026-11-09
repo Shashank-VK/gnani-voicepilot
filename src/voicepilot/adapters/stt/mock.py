@@ -33,7 +33,10 @@ class MockSTTAdapter(SpeechToTextAdapter):
             await asyncio.sleep(self.simulated_latency_ms / 1000.0)
 
         # Select canned response sequentially if default text not overridden
-        if self._call_count < len(self.canned_responses) and self.default_text == self.canned_responses[0]:
+        if (
+            self._call_count < len(self.canned_responses)
+            and self.default_text == self.canned_responses[0]
+        ):
             text = self.canned_responses[self._call_count]
         else:
             text = self.default_text

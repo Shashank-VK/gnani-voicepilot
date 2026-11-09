@@ -122,8 +122,12 @@ def test_websocket_stream_and_turn_completion(client: TestClient, speech_wav: by
     with client.websocket_connect(f"/v1/voice/{sid}") as ws:
         # Send audio in chunks
         chunk_b64 = base64.b64encode(speech_wav).decode("utf-8")
-        ws.send_text(json.dumps({"type": "audio.chunk", "turn_id": "ws_turn_01", "data": chunk_b64}))
-        ws.send_text(json.dumps({"type": "audio.end", "turn_id": "ws_turn_01", "client_upload_ms": 15.0}))
+        ws.send_text(
+            json.dumps({"type": "audio.chunk", "turn_id": "ws_turn_01", "data": chunk_b64})
+        )
+        ws.send_text(
+            json.dumps({"type": "audio.end", "turn_id": "ws_turn_01", "client_upload_ms": 15.0})
+        )
 
         # Read envelopes
         envelopes = []

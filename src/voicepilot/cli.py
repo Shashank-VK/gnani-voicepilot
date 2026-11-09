@@ -39,7 +39,9 @@ async def run_benchmark(iterations: int = 10) -> None:
         }
         res = await graph.run_turn(initial_state)
         get_metrics_collector().record_turn(res.get("timings", {}), success=True)
-        print(f"  Turn {i+1:02d}: Total {res.get('timings', {}).get('total', 0):.1f}ms | STT: {res.get('timings', {}).get('stt', 0):.1f}ms | Agent: {res.get('timings', {}).get('agent', 0):.1f}ms | TTS: {res.get('timings', {}).get('tts', 0):.1f}ms")
+        print(
+            f"  Turn {i + 1:02d}: Total {res.get('timings', {}).get('total', 0):.1f}ms | STT: {res.get('timings', {}).get('stt', 0):.1f}ms | Agent: {res.get('timings', {}).get('agent', 0):.1f}ms | TTS: {res.get('timings', {}).get('tts', 0):.1f}ms"
+        )
 
     summary = get_metrics_collector().get_summary()
     print("\n" + "=" * 65)
@@ -48,7 +50,9 @@ async def run_benchmark(iterations: int = 10) -> None:
     print(f"{'Stage':<18} | {'Count':<6} | {'Mean':<8} | {'p50':<8} | {'p90':<8} | {'p95':<8}")
     print("-" * 65)
     for stage, s in summary["stages"].items():
-        print(f"{stage:<18} | {s['count']:<6} | {s['mean_ms']:<8.1f} | {s['p50_ms']:<8.1f} | {s['p90_ms']:<8.1f} | {s['p95_ms']:<8.1f}")
+        print(
+            f"{stage:<18} | {s['count']:<6} | {s['mean_ms']:<8.1f} | {s['p50_ms']:<8.1f} | {s['p90_ms']:<8.1f} | {s['p95_ms']:<8.1f}"
+        )
     print("=" * 65)
 
 
@@ -64,7 +68,9 @@ def main():
 
     # bench command
     bench_parser = subparsers.add_parser("bench", help="Run offline latency benchmark")
-    bench_parser.add_argument("--iterations", type=int, default=10, help="Number of benchmark turns")
+    bench_parser.add_argument(
+        "--iterations", type=int, default=10, help="Number of benchmark turns"
+    )
 
     args = parser.parse_args()
 

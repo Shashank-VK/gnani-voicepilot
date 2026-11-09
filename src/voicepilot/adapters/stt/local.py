@@ -34,6 +34,7 @@ class LocalWhisperSTTAdapter(SpeechToTextAdapter):
     def _get_model(self):
         if self._model is None:
             from faster_whisper import WhisperModel
+
             logger.info(
                 "Loading faster-whisper model '%s' on %s (%s)...",
                 self.model_size,

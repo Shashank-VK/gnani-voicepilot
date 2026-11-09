@@ -25,7 +25,9 @@ class TooNoisyError(AudioValidationError):
 
 
 class TooShortError(AudioValidationError):
-    def __init__(self, message: str = "too short: audio must contain at least 0.5 seconds of speech"):
+    def __init__(
+        self, message: str = "too short: audio must contain at least 0.5 seconds of speech"
+    ):
         super().__init__("too_short", message)
 
 
@@ -40,7 +42,9 @@ class ClippingError(AudioValidationError):
 
 
 class UnsupportedFormatError(AudioValidationError):
-    def __init__(self, message: str = "unsupported format: please provide valid audio (WAV, WebM, MP3, MP4)"):
+    def __init__(
+        self, message: str = "unsupported format: please provide valid audio (WAV, WebM, MP3, MP4)"
+    ):
         super().__init__("unsupported_format", message)
 
 
@@ -106,7 +110,7 @@ def validate_audio_samples(
 
     # 3. Short-time frame energy analysis for VAD and SNR
     frame_size = int(sample_rate * 0.025)  # 25ms
-    hop_size = int(sample_rate * 0.010)    # 10ms
+    hop_size = int(sample_rate * 0.010)  # 10ms
 
     if len(samples) < frame_size:
         raise TooShortError("too short: audio is shorter than analysis window")
@@ -150,7 +154,11 @@ def validate_audio_samples(
     speech_duration_seconds = speech_frames * hop_seconds
     silence_ratio = float(1.0 - (speech_frames / float(num_frames)))
 
-    if speech_frames == 0 or silence_ratio > max_silence_ratio or speech_duration_seconds < min_speech_duration_seconds:
+    if (
+        speech_frames == 0
+        or silence_ratio > max_silence_ratio
+        or speech_duration_seconds < min_speech_duration_seconds
+    ):
         if noise_floor_db > -35.0:
             raise TooNoisyError("too noisy: background noise dominates speech")
         raise NoSpeechError("no speech: audio is silent or unintelligible")
