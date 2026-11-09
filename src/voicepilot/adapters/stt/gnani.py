@@ -3,6 +3,8 @@
 import asyncio
 import json
 import logging
+import os
+import re
 import time
 
 import httpx
@@ -17,6 +19,122 @@ from voicepilot.adapters.stt.base import (
 )
 
 logger = logging.getLogger("voicepilot.stt.gnani")
+
+
+def _sanitize_no_proxy() -> None:
+    """Strip bracket notation from IPv6 addresses in NO_PROXY to prevent httpx URL parsing bugs."""
+    for var in ("NO_PROXY", "no_proxy"):
+        val = os.environ.get(var)
+        if val and ("[" in val or "]" in val):
+            os.environ[var] = ",".join(p.strip("[]") for p in val.split(","))
+
+
+# ---------------------------------------------------------------------------
+# Hinglish transcript normalization.
+#
+# Prisma v2.5 with language_code "hi-IN" returns Hindi in native Devanagari
+# script (e.g. "2 किलो आटा ₹110 का है"), but the kirana agent (intent
+# classifier, order parser) and the demo UI work in Roman-script Hinglish.
+# This normalizer maps the Devanagari words that matter for the kirana flow
+# (catalog items, units, quantities, common demo words) plus Devanagari
+# digits/number words to their Roman forms, so "2 किलो आटा" becomes
+# "2 kilo atta" and "एक लीटर टेल" becomes "1 litre tel". Words outside the
+# map are left untouched — this is a scoped vocabulary bridge, not a full
+# transliterator.
+# ---------------------------------------------------------------------------
+
+DEVANAGARI_DIGITS = str.maketrans("०१२३४५६७८९", "0123456789")
+
+DEVANAGARI_NUMBER_WORDS = {
+    "एक": "1",
+    "दो": "2",
+    "तीन": "3",
+    "चार": "4",
+    "पाँच": "5",
+    "छह": "6",
+    "सात": "7",
+    "आठ": "8",
+    "नौ": "9",
+    "दस": "10",
+}
+
+KIRANA_TERM_MAP = {
+    # Catalog items
+    "आटा": "atta",
+    "अट्टा": "atta",  # Prisma's geminated spelling, seen in the live smoke run
+    "अटा": "atta",
+    "चावल": "chawal",
+    "दाल": "daal",
+    "तेल": "tel",
+    "टेल": "tel",  # Prisma often writes the English word "tel" with retroflex ट
+    "चीनी": "chini",
+    "नमक": "namak",
+    "साबुन": "sabun",
+    "दूध": "doodh",
+    "अंडा": "anda",
+    "बिस्कुट": "biscuit",
+    "चाय": "chai",
+    "पत्ती": "patti",
+    "मसाला": "masala",
+    "बेसन": "besan",
+    "पोहा": "poha",
+    "सरसों": "sarso",
+    "तूर": "toor",
+    # Units
+    "किलो": "kilo",
+    "लीटर": "litre",
+    "पैकेट": "packet",
+    "पीस": "piece",
+    # Common demo words
+    "नमस्ते": "Namaste",
+    "मैं": "main",
+    "आपकी": "aapki",
+    "किराना": "kirana",
+    "दुकान": "dukaan",
+    "का": "ka",
+    "वॉइस": "voice",
+    "असिस्टेंट": "assistant",
+    "हूँ": "hoon",
+    "है": "hai",
+    "और": "aur",
+    "में": "mein",
+    "स्टॉक": "stock",
+    "कितने": "kitne",
+    "क्या": "kya",
+    "मुझे": "mujhe",
+    "चाहिए": "chahiye",
+    "ले": "le",
+    "लो": "lo",
+    "कुल": "kul",
+    "ऑर्डर": "order",
+    "कन्फर्म": "confirm",
+    "करूँ": "karun",
+    "शुक्रिया": "Shukriya",
+    "यह": "yeh",
+    "चलता": "chalta",
+    "पर": "par",
+}
+
+_NUMBER_UNIT_RE = re.compile(r"\b(ek|do)\s+(kilo|litre|liter|packet|piece)\b", re.IGNORECASE)
+_WORD_MAP_RE = re.compile(
+    "(" + "|".join(re.escape(w) for w in sorted({**DEVANAGARI_NUMBER_WORDS, **KIRANA_TERM_MAP}, key=len, reverse=True)) + ")",
+)
+
+
+def normalize_hinglish_transcript(text: str) -> str:
+    """Map Devanagari kirana vocabulary/digits in a transcript to Roman Hinglish.
+
+    Leaves everything else untouched. Idempotent on already-Roman text.
+    """
+    if not text:
+        return text
+    out = text.translate(DEVANAGARI_DIGITS)
+    word_map = {**DEVANAGARI_NUMBER_WORDS, **KIRANA_TERM_MAP}
+    out = _WORD_MAP_RE.sub(lambda m: word_map[m.group(1)], out)
+    # Roman number words, only when directly before a unit (avoids "do" as a verb).
+    out = _NUMBER_UNIT_RE.sub(lambda m: {"ek": "1", "do": "2"}[m.group(1).lower()] + " " + m.group(2), out)
+    return out
+
 
 DEFAULT_KIRANA_BIAS_LIST: list[str] = [
     "atta",
@@ -82,11 +200,10 @@ class GnaniSTTAdapter(SpeechToTextAdapter):
             "bias_score": self.bias_score,
         }
 
+        _sanitize_no_proxy()
         for attempt in range(self.max_retries + 1):
             try:
-                async with httpx.AsyncClient(
-                    timeout=self.timeout_seconds, trust_env=False
-                ) as client:
+                async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                     response = await client.post(
                         self.endpoint,
                         headers=headers,
@@ -99,6 +216,9 @@ class GnaniSTTAdapter(SpeechToTextAdapter):
                     latency_ms = (time.perf_counter() - t0) * 1000.0
                     transcript = result.get("transcript")
                     text = "" if transcript is None else str(transcript).strip()
+                    # Prisma v2.5 hi-IN returns Devanagari script; normalize the
+                    # kirana vocabulary to Roman Hinglish for the agent + UI.
+                    text = normalize_hinglish_transcript(text)
                     return TranscriptionResult(
                         text=text,
                         latency_ms=latency_ms,

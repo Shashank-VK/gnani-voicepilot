@@ -31,9 +31,9 @@
       "title": "Gradio rebrand + Hinglish examples + demo fixtures"
     },
     {
-      "evidence": "",
+      "evidence": "scripts/live_smoke.py run 3 (2026-11-09): Step A TTS PASS (291884 bytes, 9.12s, 4889.0ms, hi-en); Step B STT PASS (transcript 'Namaste, main aapki kirana dukaan ka voice assistant hoon 2 kilo atta ₹110 ka hai aur 1 litre tel ₹145 ka', 2171.9ms, 6/6 kirana terms matched); Step C end-to-end PASS (response 'Aapka order: 2 kilo atta ₹110 + 1 litre tel ₹145 = kul ₹255. Confirm karun?', total 7579.1ms, speech 332844 bytes/10.40s); Step D fixtures PASS (5 WAVs: 250924/291884/189484/317484/391724 bytes). Full suite 106 passed, ruff clean. Defect found in run 2 and fixed: Prisma returns geminated 'अट्टा' — added to normalize map + test.",
       "id": "gp-006",
-      "status": "pending",
+      "status": "passing",
       "title": "Live smoke test on real Gnani key (STT + TTS, short calls, evidence logged)"
     },
     {
@@ -45,5 +45,5 @@
   ],
   "passing_requires_evidence": true,
   "project": "gnani-voicepilot",
-  "single_active_feature": "gp-006"
+  "single_active_feature": "gp-007"
 }

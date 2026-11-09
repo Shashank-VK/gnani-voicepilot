@@ -13,7 +13,57 @@ from voicepilot.adapters.stt.base import (
     ProviderTimeoutError,
     TranscriptionResult,
 )
-from voicepilot.adapters.stt.gnani import GnaniSTTAdapter
+from voicepilot.adapters.stt.gnani import GnaniSTTAdapter, normalize_hinglish_transcript
+
+
+def test_normalize_hinglish_devanagari_transcript():
+    # Real Prisma v2.5 hi-IN output for the smoke-test sentence.
+    raw = "नमस्ते, मैं आपकी किराना दुकान का वॉइस असिस्टेंट हूँ 2 किलो आटा ₹110 का है और एक लीटर टेल ₹145 का"
+    out = normalize_hinglish_transcript(raw)
+    assert "2 kilo atta" in out
+    assert "1 litre tel" in out
+    assert "₹110" in out and "₹145" in out
+    assert "किलो" not in out and "आटा" not in out
+
+
+def test_normalize_hinglish_geminated_atta():
+    # Live smoke run: Prisma returned "अट्टा" (geminated), not "आटा" — the
+    # kirana agent's parse_order only matches Roman "atta", so this must map.
+    raw = "नमस्ते, मैं आपकी किराना दुकान का वॉइस असिस्टेंट हूँ 2 किलो अट्टा ₹110 का है और एक लीटर टेल ₹145 का"
+    out = normalize_hinglish_transcript(raw)
+    assert out == "Namaste, main aapki kirana dukaan ka voice assistant hoon 2 kilo atta ₹110 ka hai aur 1 litre tel ₹145 ka"
+    assert "अट्टा" not in out
+
+
+def test_normalize_hinglish_devanagari_digits():
+    assert normalize_hinglish_transcript("२ किलो आटा") == "2 kilo atta"
+    assert normalize_hinglish_transcript("५ लीटर दूध") == "5 litre doodh"
+
+
+def test_normalize_hinglish_already_roman_unchanged():
+    text = "2 kilo atta aur 1 litre tel, total kitna hua?"
+    assert normalize_hinglish_transcript(text) == text
+
+
+def test_normalize_hinglish_roman_number_before_unit():
+    assert normalize_hinglish_transcript("do kilo atta") == "2 kilo atta"
+    # "do" as a verb is left alone.
+    assert normalize_hinglish_transcript("what do you want?") == "what do you want?"
+
+
+@pytest.mark.asyncio
+async def test_gnani_stt_devanagari_transcript_normalized(speech_wav):
+    adapter = GnaniSTTAdapter(api_key="mock-gnani-key")
+    mock_resp = httpx.Response(
+        200,
+        json={"success": True, "transcript": "2 किलो आटा और एक लीटर टेल", "model": "prisma-v2.5"},
+        request=httpx.Request("POST", "https://api.vachana.ai/stt/v3"),
+    )
+
+    with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)):
+        result = await adapter.transcribe(speech_wav)
+
+    assert result.text == "2 kilo atta aur 1 litre tel"
 
 EXPECTED_KIRANA_TERMS = [
     "atta",

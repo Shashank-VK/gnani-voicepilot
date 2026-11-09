@@ -1,12 +1,72 @@
 """Tests for Gnani TTS adapter (Timbre v3.0 REST, Shivani, hi-en, wav 16kHz)."""
 
+import io
+import struct
+import wave
 from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 
 from voicepilot.adapters.tts.base import SynthesisResult, TTSError
-from voicepilot.adapters.tts.gnani import GnaniTTSAdapter
+from voicepilot.adapters.tts.gnani import GnaniTTSAdapter, normalize_wav_bytes
+
+
+def _make_bogus_header_wav(duration_s: float = 0.5) -> bytes:
+    """Build a valid 16kHz mono WAV, then corrupt its size headers like Timbre does."""
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(16000)
+        wf.writeframes(b"\x00\x00" * int(16000 * duration_s))
+    raw = bytearray(buf.getvalue())
+    struct.pack_into("<I", raw, 4, 0xFFFFFFFF)
+    data_at = bytes(raw).find(b"data")
+    struct.pack_into("<I", raw, data_at + 4, 0xFFFFFFFF)
+    return bytes(raw)
+
+
+def test_normalize_wav_bytes_repairs_placeholder_sizes():
+    bogus = _make_bogus_header_wav(0.5)
+    with wave.open(io.BytesIO(bogus), "rb") as wf:
+        assert wf.getnframes() > 16000  # bogus header claims ~2**31 frames
+    fixed = normalize_wav_bytes(bogus)
+    with wave.open(io.BytesIO(fixed), "rb") as wf:
+        assert wf.getnframes() == 8000
+        assert abs(wf.getnframes() / wf.getframerate() - 0.5) < 0.01
+
+
+def test_normalize_wav_bytes_leaves_good_wav_alone():
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(16000)
+        wf.writeframes(b"\x00\x00" * 8000)
+    good = buf.getvalue()
+    assert normalize_wav_bytes(good) == good
+    assert normalize_wav_bytes(b"not a wav") == b"not a wav"
+
+
+@pytest.mark.asyncio
+async def test_gnani_tts_repairs_bogus_wav_header():
+    adapter = GnaniTTSAdapter(api_key="mock-gnani-key")
+    bogus = _make_bogus_header_wav(0.5)
+    mock_resp = httpx.Response(
+        200,
+        content=bogus,
+        headers={"Content-Type": "audio/wav"},
+        request=httpx.Request("POST", "https://api.vachana.ai/api/v1/tts/inference"),
+    )
+
+    with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)):
+        result = await adapter.synthesize("Namaste! Aapko kya chahiye?")
+
+    with wave.open(io.BytesIO(result.audio_bytes), "rb") as wf:
+        assert wf.getnframes() == 8000
+        assert wf.getframerate() == 16000
+        assert wf.getnchannels() == 1
 
 MOCK_WAV_BYTES = (
     b"RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x80>\x00\x00\x00}\x00\x00"

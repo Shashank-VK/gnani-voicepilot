@@ -1,8 +1,12 @@
 """Gnani Timbre v3.0 REST TTS adapter for Hinglish with Shivani voice."""
 
 import asyncio
+import io
 import logging
+import os
+import struct
 import time
+import wave
 
 import httpx
 
@@ -11,6 +15,45 @@ from voicepilot.adapters.tts.base import SynthesisResult, TextToSpeechAdapter, T
 logger = logging.getLogger("voicepilot.tts.gnani")
 
 DEFAULT_GNANI_TTS_ENDPOINT = "https://api.vachana.ai/api/v1/tts/inference"
+
+
+def normalize_wav_bytes(audio_bytes: bytes) -> bytes:
+    """Repair a WAV whose RIFF/data size headers disagree with its real length.
+
+    Timbre's REST response carries a streaming-style placeholder size
+    (0xFFFFFFFF), so `wave` reports a bogus ~2**31-frame duration even though
+    the payload is a complete ~seconds-long clip. Patch the RIFF chunk size
+    and the data chunk size to the actual byte counts; return the input
+    unchanged if it is not a parseable WAV.
+    """
+    if len(audio_bytes) < 44 or audio_bytes[0:4] != b"RIFF" or audio_bytes[8:12] != b"WAVE":
+        return audio_bytes
+    try:
+        data_at = audio_bytes.find(b"data")
+        if data_at < 0 or data_at + 8 > len(audio_bytes):
+            return audio_bytes
+        declared_data_size = struct.unpack_from("<I", audio_bytes, data_at + 4)[0]
+        actual_data_size = len(audio_bytes) - (data_at + 8)
+        if declared_data_size == actual_data_size:
+            return audio_bytes
+        fixed = bytearray(audio_bytes)
+        struct.pack_into("<I", fixed, 4, len(audio_bytes) - 8)
+        struct.pack_into("<I", fixed, data_at + 4, actual_data_size)
+        # Validate the repair parses with correct frame count.
+        with wave.open(io.BytesIO(bytes(fixed)), "rb") as wf:
+            if wf.getnframes() * wf.getsampwidth() * wf.getnchannels() != actual_data_size:
+                return audio_bytes
+        return bytes(fixed)
+    except Exception:
+        return audio_bytes
+
+
+def _sanitize_no_proxy() -> None:
+    """Strip bracket notation from IPv6 addresses in NO_PROXY to prevent httpx URL parsing bugs."""
+    for var in ("NO_PROXY", "no_proxy"):
+        val = os.environ.get(var)
+        if val and ("[" in val or "]" in val):
+            os.environ[var] = ",".join(p.strip("[]") for p in val.split(","))
 
 
 class GnaniTTSAdapter(TextToSpeechAdapter):
@@ -64,11 +107,10 @@ class GnaniTTSAdapter(TextToSpeechAdapter):
             },
         }
 
+        _sanitize_no_proxy()
         for attempt in range(self.max_retries + 1):
             try:
-                async with httpx.AsyncClient(
-                    timeout=self.timeout_seconds, trust_env=False
-                ) as client:
+                async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                     response = await client.post(
                         self.endpoint,
                         headers=headers,
@@ -76,7 +118,7 @@ class GnaniTTSAdapter(TextToSpeechAdapter):
                     )
 
                 if response.status_code == 200:
-                    audio_bytes = response.content
+                    audio_bytes = normalize_wav_bytes(response.content)
                     if not audio_bytes:
                         raise TTSError(
                             "Gnani TTS returned empty audio payload",
